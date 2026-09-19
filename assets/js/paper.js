@@ -419,6 +419,7 @@
 
     if (p.bibtex) {
       var cite = make('details', 'cite');
+      cite.open = true;                  /* the citation is the point of the section */
       cite.innerHTML = '<summary>BibTeX</summary><pre>' + esc(p.bibtex) + '</pre>' +
         '<button class="copy" type="button">Copy</button>';
       cite.querySelector('.copy').addEventListener('click', function (e) {
