@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>HYPVR Training Loop</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,600&display=swap">
+<style>
+:root{
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+
+  --bg:#F1F3F7;
+  --plate:#FFFFFF;
+  --ink:#141B26;
+  --muted:#5D687A;
+  --hair:#DCE1EA;
+  --plate-hair:#E4E8EF;
+  --grid:rgba(20,27,38,.055);
+  --shadow:0 1px 2px rgba(20,27,38,.05),0 12px 34px rgba(20,27,38,.09);
+
+  --accent:#1E6DCC;
+  --pink:#BE2F88;
+  --green:#28794A;
+  --wire:#39434F;
+
+  --chip-ink:#141C28;
+  --c-blue-f:#D4E6F9;  --c-blue-s:#78A9DF;
+  --c-green-f:#D6EBDA; --c-green-s:#6DB27E;
+  --c-pink-f:#F8D9E8;  --c-pink-s:#DD9BC2;
+  --c-tan-f:#FBE4CE;   --c-tan-s:#E4AD78;
+  --box-f:#F0F2F6;     --box-s:#C6CCD7;
+  --panelA-f:rgba(30,109,204,.045);
+  --panelB-f:rgba(190,47,136,.042);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0E13;
+    --plate:#141A23;
+    --ink:#E3E9F1;
+    --muted:#94A0B2;
+    --hair:#232B37;
+    --plate-hair:#232B37;
+    --grid:rgba(255,255,255,.05);
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+    --accent:#6FADF4;
+    --pink:#F27FC6;
+    --green:#66C98C;
+    --wire:#98A5B7;
+    --box-f:rgba(255,255,255,.045);
+    --box-s:#39424F;
+    --panelA-f:rgba(111,173,244,.075);
+    --panelB-f:rgba(242,127,198,.07);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0E13;
+  --plate:#141A23;
+  --ink:#E3E9F1;
+  --muted:#94A0B2;
+  --hair:#232B37;
+  --plate-hair:#232B37;
+  --grid:rgba(255,255,255,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+  --accent:#6FADF4;
+  --pink:#F27FC6;
+  --green:#66C98C;
+  --wire:#98A5B7;
+  --box-f:rgba(255,255,255,.045);
+  --box-s:#39424F;
+  --panelA-f:rgba(111,173,244,.075);
+  --panelB-f:rgba(242,127,198,.07);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--sans);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{
+  max-width:1720px;margin:0 auto;padding-inline:16px;
+  padding-block:clamp(18px,3vw,34px);
+  display:flex;flex-direction:column;gap:clamp(14px,2vw,20px);
+}
+
+/* ---------- header ---------- */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.head .who{display:flex;flex-direction:column;gap:5px;min-width:0}
+.eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);
+}
+h1{
+  margin:0;font-size:clamp(20px,2.6vw,27px);font-weight:600;letter-spacing:-.015em;
+  text-wrap:balance;
+}
+.sub{margin:0;color:var(--muted);max-width:62ch;font-size:14px}
+.btn{
+  flex:none;display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink);background:var(--plate);border:1px solid var(--hair);
+  border-radius:999px;padding:9px 15px;cursor:pointer;
+  transition:border-color .2s,color .2s;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn svg{width:11px;height:11px;fill:currentColor}
+
+/* ---------- stage ---------- */
+.plate{
+  background:var(--plate);border:1px solid var(--plate-hair);border-radius:14px;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.stage{overflow-x:auto;overflow-y:hidden}
+.stage svg{display:block;width:100%;min-width:1180px;height:auto}
+
+/* ---------- caption rail ---------- */
+.rail{display:flex;flex-direction:column;gap:11px}
+.ticks{display:flex;gap:5px}
+.tick{flex:1;height:3px;border-radius:2px;background:var(--hair);overflow:hidden}
+.tick i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px}
+.tick.done i{width:100%}
+.tick.live i{width:100%;transition:width linear var(--dur,3s)}
+.cap{display:flex;gap:clamp(12px,3vw,28px);align-items:baseline;flex-wrap:wrap;min-height:46px}
+.cap .idx{
+  font-family:var(--mono);font-size:13px;letter-spacing:.1em;color:var(--muted);
+  white-space:nowrap;flex:none;font-variant-numeric:tabular-nums;
+}
+.cap .idx b{color:var(--ink);font-weight:500}
+.cap .say{margin:0;font-size:clamp(15px,1.6vw,17px);max-width:88ch;color:var(--ink)}
+.cap .say em{font-family:var(--serif);font-style:italic}
+
+/* ---------- svg typography ---------- */
+svg text{font-family:var(--sans);font-size:17.4px}
+.t{fill:var(--chip-ink)}
+.lbl{fill:var(--ink);font-weight:500}
+.mini{fill:var(--muted);font-size:16.5px}
+.mv{font-family:var(--serif);font-style:italic}
+.mvb{font-family:var(--serif);font-style:italic;font-weight:600}
+.mv:not([font-size]),.mvb:not([font-size]){font-size:1.13em}
+.ptitle{font-size:19.7px;font-weight:600}
+
+/* ---------- reveal ---------- */
+.rv{opacity:0;transition:opacity .34s ease}
+.rv.pop{transform-box:fill-box;transform-origin:center;transform:scale(.94);transition:opacity .34s ease,transform .34s cubic-bezier(.2,.8,.25,1)}
+.rv.on{opacity:1;transform:none}
+.wire{fill:none;stroke:var(--wire);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke-dashoffset .38s cubic-bezier(.3,.7,.3,1)}
+.wire.thin{stroke-width:1.4;opacity:.72}
+.gdash{fill:none;stroke:var(--green);stroke-width:2;stroke-dasharray:9 7;stroke-linecap:round;stroke-linejoin:round}
+.bdash{fill:none;stroke:var(--accent);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.pdash{fill:none;stroke:var(--pink);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.on .gdash,.on .bdash,.on .pdash{animation:march 1.05s linear infinite}
+@keyframes march{to{stroke-dashoffset:-19}}
+.frame{stroke-width:1.5}
+
+.resetting *{transition-delay:0s!important;transition-duration:.24s!important}
+
+@media (prefers-reduced-motion:reduce){
+  .rv{transition:none}
+  .on .gdash,.on .bdash,.on .pdash{animation:none}
+  .flow{display:none}
+  .tick.live i{transition:none}
+}
+@media (max-width:640px){
+  .cap{min-height:64px}
+}
+</style>
+
+
+<style id="shm-embed">
+/* ---- embedded in the Super Hyper Master paper pages ---- */
+html,body{background:transparent}
+/* the host page supplies the heading and the play control */
+.head{display:none}
+/* narrow screens: fit the whole figure instead of forcing a sideways scroll */
+@media (max-width:1000px){
+  .stage svg{min-width:0}
+  .cap{min-height:0}
+  .cap .say{font-size:14px}
+}
+.wrap{max-width:none;padding-inline:0;padding-block:0;gap:14px}
+.plate{border-radius:12px}
+.head{align-items:flex-start}
+@media (max-width:700px){ .head .btn{align-self:flex-start} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="who">
+      <span class="eyebrow">Training pipeline</span>
+      <h1>HYPVR Training Loop</h1>
+      <p class="sub">One pass through the framework: the video generative prior, the forward path, both supervision branches, and the objective they add up to.</p>
+    </div>
+    <button class="btn" id="toggle" aria-label="Pause the animation">
+      <svg viewBox="0 0 10 12" aria-hidden="true"><rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/></svg>
+      <span id="toggleLabel">Pause</span>
+    </button>
+  </header>
+
+  <div class="plate">
+    <div class="stage">
+<svg id="fig" viewBox="0 0 1560 748" role="img" aria-label="HYPVR training framework for video restoration: a pretrained video generative prior initializes a video restoration generator, which is supervised by video distribution matching above and sample-frame spatial losses below.">
+<defs>
+  <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#B7D6EC"/><stop offset="1" stop-color="#EADDC6"/>
+  </linearGradient>
+  <linearGradient id="gSea" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#53829A"/><stop offset="1" stop-color="#2C5164"/>
+  </linearGradient>
+  <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+    <circle cx="1.2" cy="1.2" r="1.1" fill="var(--grid)"/>
+  </pattern>
+  <filter id="fLQ" x="-6%" y="-6%" width="112%" height="112%">
+    <feGaussianBlur stdDeviation="2"/>
+    <feColorMatrix type="saturate" values="0.6"/>
+  </filter>
+  <clipPath id="bboxClip" clipPathUnits="objectBoundingBox">
+    <rect x="0" y="0" width="1" height="1"/>
+  </clipPath>
+  <filter id="fNoise" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="4" seed="9"/>
+    <feComponentTransfer><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+    <feColorMatrix type="saturate" values="0.14"/>
+  </filter>
+
+  <marker id="mW" markerWidth="11" markerHeight="8" refX="10.2" refY="4" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M0,0 L11,4 L0,8 Z" fill="var(--wire)"/></marker>
+  <marker id="mG" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M0,0 L12,4.5 L0,9 Z" fill="var(--green)"/></marker>
+  <marker id="mB" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M0,0 L12,4.5 L0,9 Z" fill="var(--accent)"/></marker>
+  <marker id="mP" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+    <path d="M0,0 L12,4.5 L0,9 Z" fill="var(--pink)"/></marker>
+
+  <g id="scene">
+    <rect width="130" height="92" fill="url(#gSky)"/>
+    <circle cx="105" cy="19" r="8" fill="#FFE1A6" opacity=".9"/>
+    <rect y="50" width="130" height="42" fill="url(#gSea)"/>
+    <path d="M0,50 L32,19 L64,50 Z" fill="#82968B"/>
+    <path d="M92,50 L114,31 L130,45 L130,50 Z" fill="#8FA298"/>
+    <path d="M0,64 L26,33 L56,64 Z" fill="#5C7166"/>
+    <rect x="12" y="49" width="6" height="8" fill="#EBCDA8"/>
+    <rect x="21" y="44" width="5" height="7" fill="#DBB791"/>
+    <rect x="29" y="51" width="7" height="9" fill="#F2DBC0"/>
+    <rect x="38" y="47" width="5" height="7" fill="#E3C3A0"/>
+    <rect x="45" y="55" width="6" height="8" fill="#EBCDA8"/>
+    <rect y="49" width="130" height="1.6" fill="#fff" opacity=".28"/>
+    <rect x="94" y="62" width="22" height="2" fill="#fff" opacity=".22"/>
+    <rect x="84" y="72" width="30" height="2" fill="#fff" opacity=".16"/>
+  </g>
+  <g id="noiseP">
+    <rect width="130" height="92" fill="#6E7884"/>
+    <rect width="130" height="92" filter="url(#fNoise)"/>
+  </g>
+</defs>
+
+<rect width="1560" height="748" fill="var(--plate)"/>
+<rect width="1560" height="748" fill="url(#dots)"/>
+
+<!-- ============ panel frames ============ -->
+<g class="rv" data-s="4">
+  <rect x="830" y="36" width="706" height="276" rx="16" fill="var(--panelA-f)" stroke="var(--accent)" class="frame"/>
+  <text class="ptitle" x="844" y="66" fill="var(--accent)">Video Distribution Matching</text>
+</g>
+<g class="rv" data-s="7">
+  <rect x="830" y="372" width="706" height="348" rx="16" fill="var(--panelB-f)" stroke="var(--pink)" class="frame"/>
+  <text class="ptitle" x="852" y="402" fill="var(--pink)">Sample-Frame for Spatial Supervision</text>
+</g>
+
+<!-- ============ solid wires ============ -->
+<g class="rv" data-s="3" data-d="1"><path class="wire" data-draw d="M190,392 H232" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="3" data-d="2"><path class="wire" data-draw d="M350,392 H378" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="3" data-d="4"><path class="wire" data-draw d="M556,392 H596" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="3" data-d="6">
+  <path class="wire" data-draw d="M754,392 H792"/>
+  <circle cx="792" cy="392" r="3.8" fill="var(--wire)"/>
+</g>
+
+<g class="rv" data-s="4" data-d="1"><path class="wire" data-draw d="M792,392 V154 H836" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="4" data-d="3"><path class="wire" data-draw d="M1028,155 H1036" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="4" data-d="5">
+  <path class="wire" data-draw d="M1168,155 H1182 V115 H1196" marker-end="url(#mW)"/>
+  <path class="wire" data-draw d="M1168,155 H1182 V221 H1196" marker-end="url(#mW)"/>
+</g>
+<g class="rv" data-s="4" data-d="7">
+  <path class="wire" data-draw d="M1376,115 H1388 V168 H1392" marker-end="url(#mW)"/>
+  <path class="wire" data-draw d="M1376,221 H1388 V168"/>
+</g>
+
+<g class="rv" data-s="7" data-d="1"><path class="wire" data-draw d="M792,392 V496 H848" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="3"><path class="wire" data-draw d="M966,496 H992" marker-end="url(#mW)"/></g>
+
+<g class="rv" data-s="8" data-d="1"><path class="wire" data-draw d="M1148,464 H1192" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="8" data-d="2"><path class="wire" data-draw d="M1148,522 H1180 V622 H1192" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="8" data-d="2"><path class="wire" data-draw d="M1134,644 H1192" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="8" data-d="3"><path class="wire thin" data-draw d="M1000,644 H983 V420 H1240 V432" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="8" data-d="5"><path class="wire" data-draw d="M1370,472 H1392" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="8" data-d="5"><path class="wire" data-draw d="M1370,632 H1392" marker-end="url(#mW)"/></g>
+
+<!-- ============ dashed supervision paths ============ -->
+<g class="rv" data-s="2">
+  <path id="pInit" class="gdash" d="M300,210 C300,274 320,300 392,334" marker-end="url(#mG)"/>
+</g>
+<g class="rv" data-s="5">
+  <path id="pPrior" class="gdash" d="M352,34 V16 H1240 V74" marker-end="url(#mG)"/>
+</g>
+<g class="rv" data-s="6">
+  <path id="pTemporal" class="bdash" d="M1461,202 V288 H520 V338" marker-end="url(#mB)"/>
+</g>
+<g class="rv" data-s="9">
+  <path id="pSpatial" class="pdash" d="M1510,472 H1524 V704 H520 V446" marker-end="url(#mP)"/>
+  <path class="pdash" d="M1510,632 H1524"/>
+</g>
+
+<!-- ============ step 1 : generative prior ============ -->
+<g class="rv" data-s="1">
+  <rect x="24" y="34" width="400" height="176" rx="14" fill="var(--box-f)" stroke="var(--box-s)" class="frame"/>
+  <text x="224" y="62" text-anchor="middle" font-size="18.6" font-weight="600" fill="var(--ink)">Video Generative Prior</text>
+</g>
+<g class="rv pop" data-s="1" data-d="1">
+  <rect x="44" y="80" width="116" height="112" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="102" y="132.3" text-anchor="middle" font-size="15.7">Video VAE</text>
+  <text class="t" x="102" y="152.3" text-anchor="middle" font-size="15.7">Encoder</text>
+</g>
+<g class="rv pop" data-s="1" data-d="2">
+  <rect x="168" y="80" width="116" height="112" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="226" y="122.3" text-anchor="middle" font-size="15.7">Video</text>
+  <text class="t" x="226" y="142.3" text-anchor="middle" font-size="15.7">Diffusion</text>
+  <text class="t" x="226" y="162.3" text-anchor="middle" font-size="15.7">Model</text>
+</g>
+<g class="rv pop" data-s="1" data-d="3">
+  <rect x="292" y="80" width="116" height="112" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="350" y="132.3" text-anchor="middle" font-size="15.7">Video VAE</text>
+  <text class="t" x="350" y="152.3" text-anchor="middle" font-size="15.7">Decoder</text>
+</g>
+
+<!-- ============ step 2 : generator ============ -->
+<g class="rv pop" data-s="2" data-d="2">
+  <rect x="386" y="346" width="170" height="92" rx="9" fill="var(--c-green-f)" stroke="var(--c-green-s)" stroke-width="1.8"/>
+  <text class="t" x="471" y="387.8" text-anchor="middle" font-size="17.4" font-weight="600">Video Restoration</text>
+  <text class="t" x="471" y="408.8" text-anchor="middle" font-size="17.4" font-weight="600">Generator</text>
+</g>
+<g class="rv" data-s="2" data-d="1">
+  <text x="292" y="288" text-anchor="end" font-size="15.7" font-weight="500" fill="var(--green)">Initialization</text>
+</g>
+
+<!-- ============ step 3 : forward pass ============ -->
+<g class="rv" data-s="3" data-d="0">
+  <text class="lbl" x="113" y="320" text-anchor="middle" font-size="16.2">Input LQ Frames</text>
+  <rect x="56" y="330" width="130" height="92" rx="2" fill="#A8B7C2" stroke="var(--plate)" stroke-width="2"/>
+  <rect x="48" y="338" width="130" height="92" rx="2" fill="#93A5B2" stroke="var(--plate)" stroke-width="2"/>
+  <g transform="translate(40,346)">
+    <g clip-path="url(#bboxClip)" filter="url(#fLQ)"><use href="#scene"/></g>
+    <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/>
+  </g>
+</g>
+<g class="rv pop" data-s="3" data-d="1">
+  <path d="M240,332 L350,356 L350,428 L240,452 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="295" y="380.3" text-anchor="middle" font-size="14.5">Video</text>
+  <text class="t" x="295" y="398.3" text-anchor="middle" font-size="14.5">VAE</text>
+  <text class="t" x="295" y="416.3" text-anchor="middle" font-size="14.5">Encoder</text>
+</g>
+<g class="rv" data-s="3" data-d="5">
+  <text class="lbl" x="677" y="320" text-anchor="middle" font-size="16.2">Restored Latent <tspan class="mv">ẑ</tspan></text>
+  <rect x="620" y="330" width="130" height="92" rx="2" fill="#7E8894" stroke="var(--plate)" stroke-width="2"/>
+  <rect x="612" y="338" width="130" height="92" rx="2" fill="#6E7884" stroke="var(--plate)" stroke-width="2"/>
+  <g transform="translate(604,346)">
+    <use href="#noiseP"/>
+    <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/>
+  </g>
+</g>
+
+<!-- ============ step 4 : video distribution matching ============ -->
+<g class="rv pop" data-s="4" data-d="2">
+  <rect x="844" y="98" width="180" height="112" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/>
+  <text class="t" x="934" y="131.3" text-anchor="middle" font-size="16.2" font-weight="600">Add Noise</text>
+  <text class="t" x="934" y="161.3" text-anchor="middle" font-size="17.5"><tspan class="mv">z</tspan><tspan class="mv" font-size="13" dy="4">t</tspan><tspan dy="-4"> = </tspan><tspan class="mv">α</tspan><tspan class="mv" font-size="13" dy="4">t</tspan><tspan dy="-4"> </tspan><tspan class="mv">ẑ</tspan><tspan> + </tspan><tspan class="mv">σ</tspan><tspan class="mv" font-size="13" dy="4">t</tspan><tspan dy="-4"> </tspan><tspan class="mv">ε</tspan></text>
+  <text class="t" x="934" y="189.3" text-anchor="middle" font-size="16.5"><tspan class="mv">t</tspan> ∼ <tspan class="mv">U</tspan>([20, 400])</text>
+</g>
+<g class="rv" data-s="4" data-d="4">
+  <rect x="1058" y="102" width="106" height="78" rx="2" fill="#7E8894" stroke="var(--plate)" stroke-width="2"/>
+  <rect x="1051" y="109" width="106" height="78" rx="2" fill="#6E7884" stroke="var(--plate)" stroke-width="2"/>
+  <g transform="translate(1044,116) scale(0.8154,0.8478)">
+    <use href="#noiseP"/>
+  </g>
+  <rect x="1044" y="116" width="106" height="78" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/>
+</g>
+<g class="rv pop" data-s="4" data-d="6">
+  <rect x="1206" y="82" width="170" height="66" rx="8" fill="var(--c-green-f)" stroke="var(--c-green-s)" class="frame"/>
+  <text class="t" x="1291" y="110.8" text-anchor="middle" font-size="16.2">Frozen Video</text>
+  <text class="t" x="1291" y="131.8" text-anchor="middle" font-size="16.2">Teacher Score</text>
+</g>
+<g class="rv pop" data-s="4" data-d="6">
+  <rect x="1206" y="188" width="170" height="66" rx="8" fill="var(--c-pink-f)" stroke="var(--c-pink-s)" class="frame"/>
+  <text class="t" x="1291" y="216.8" text-anchor="middle" font-size="16.2">Trainable</text>
+  <text class="t" x="1291" y="237.8" text-anchor="middle" font-size="16.2">Fake Score</text>
+</g>
+<g class="rv" data-s="4" data-d="6">
+  <text class="mini" x="1376" y="72" text-anchor="end"><tspan class="mv">s</tspan><tspan font-size="12" dy="4">tea</tspan><tspan dy="-4">(</tspan><tspan class="mv">z</tspan><tspan font-size="12" dy="4">t</tspan><tspan dy="-4">, </tspan><tspan class="mv">t</tspan>)</text>
+  <text class="mini" x="1376" y="276" text-anchor="end"><tspan class="mv">s</tspan><tspan font-size="12" dy="4">φ</tspan><tspan dy="-4">(</tspan><tspan class="mv">z</tspan><tspan font-size="12" dy="4">t</tspan><tspan dy="-4">, </tspan><tspan class="mv">t</tspan>)</text>
+</g>
+<g class="rv pop" data-s="4" data-d="8">
+  <rect x="1400" y="134" width="122" height="68" rx="8" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="1461" y="162.3" text-anchor="middle" font-size="21"><tspan class="mvb">ℒ</tspan><tspan font-size="14.5" dy="5">DM</tspan></text>
+  <text class="t" x="1461" y="186.3" text-anchor="middle" font-size="16.5">= <tspan class="mv">s</tspan><tspan font-size="12" dy="4">φ</tspan><tspan dy="-4"> − </tspan><tspan class="mv">s</tspan><tspan font-size="12" dy="4">tea</tspan></text>
+</g>
+
+<!-- ============ step 5 : supervision prior label ============ -->
+<g class="rv" data-s="5">
+  <text x="646" y="36" text-anchor="middle" font-size="15.7" font-weight="500" fill="var(--green)">Supervision Prior</text>
+</g>
+
+<!-- ============ step 6 : temporal supervision label ============ -->
+<g class="rv" data-s="6">
+  <text x="505" y="294" text-anchor="end" font-size="15.7" font-weight="500" fill="var(--accent)">Temporal Supervision</text>
+</g>
+
+<!-- ============ step 7 : sample-frame decoding ============ -->
+<g class="rv pop" data-s="7" data-d="2">
+  <path d="M856,462 L966,438 L966,554 L856,530 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="911" y="484.3" text-anchor="middle" font-size="14.5">Video</text>
+  <text class="t" x="911" y="502.3" text-anchor="middle" font-size="14.5">VAE</text>
+  <text class="t" x="911" y="520.3" text-anchor="middle" font-size="14.5">Decoder</text>
+</g>
+<g class="rv" data-s="7" data-d="4">
+  <rect x="1014" y="436" width="130" height="92" rx="2" fill="#A8B7C2" stroke="var(--plate)" stroke-width="2"/>
+  <rect x="1007" y="443" width="130" height="92" rx="2" fill="#93A5B2" stroke="var(--plate)" stroke-width="2"/>
+  <g transform="translate(1000,450)">
+    <use href="#scene"/>
+    <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/>
+  </g>
+</g>
+<g class="rv" data-s="7" data-d="6">
+  <text class="lbl" x="1065" y="586" text-anchor="middle" font-size="16.2">Ground Truth</text>
+  <g transform="translate(1000,598)">
+    <use href="#scene"/>
+    <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/>
+  </g>
+</g>
+
+<!-- ============ step 8 : spatial losses ============ -->
+<g class="rv pop" data-s="8" data-d="3">
+  <rect x="1200" y="440" width="170" height="66" rx="8" fill="var(--c-pink-f)" stroke="var(--c-pink-s)" class="frame"/>
+  <text class="t" x="1285" y="467.8" text-anchor="middle" font-size="16.8">Image</text>
+  <text class="t" x="1285" y="490.8" text-anchor="middle" font-size="16.8">Discriminator</text>
+</g>
+<g class="rv pop" data-s="8" data-d="4">
+  <rect x="1200" y="592" width="170" height="80" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/>
+  <text class="t" x="1285" y="627.3" text-anchor="middle" font-size="16.8">Image Fidelity</text>
+  <text class="t" x="1285" y="649.3" text-anchor="middle" font-size="16.8">MSE + LPIPS</text>
+</g>
+<g class="rv pop" data-s="8" data-d="6">
+  <rect x="1400" y="444" width="110" height="56" rx="8" fill="var(--c-pink-f)" stroke="var(--c-pink-s)" class="frame"/>
+  <text class="t" x="1455" y="478.3" text-anchor="middle" font-size="25"><tspan class="mvb">ℒ</tspan><tspan font-size="16" dy="5">adv</tspan></text>
+</g>
+<g class="rv pop" data-s="8" data-d="6">
+  <rect x="1400" y="604" width="110" height="56" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/>
+  <text class="t" x="1455" y="638.3" text-anchor="middle" font-size="25"><tspan class="mvb">ℒ</tspan><tspan font-size="16" dy="5">fid</tspan></text>
+</g>
+
+<!-- ============ step 9 : spatial supervision label ============ -->
+<g class="rv" data-s="9">
+  <text x="505" y="470" text-anchor="end" font-size="15.7" font-weight="500" fill="var(--pink)">Spatial Supervision</text>
+</g>
+
+<!-- ============ step 10 : overall objective ============ -->
+<g class="rv" data-s="10">
+  <path d="M85,520 H455" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="270" y="558" text-anchor="middle" font-size="19.1" font-weight="600" fill="var(--ink)">Overall Video Restoration Objective</text>
+  <text x="270" y="626" text-anchor="middle" font-size="34" fill="var(--ink)"><tspan class="mvb">ℒ</tspan><tspan font-size="19" dy="5">G</tspan><tspan dy="-5"> = </tspan><tspan class="mvb">ℒ</tspan><tspan font-size="19" dy="5">fid</tspan><tspan dy="-5"> + </tspan><tspan class="mv">λ</tspan><tspan font-size="19" dy="5">adv</tspan><tspan dy="-5"> </tspan><tspan class="mvb">ℒ</tspan><tspan font-size="19" dy="5">adv</tspan><tspan dy="-5"> + </tspan><tspan class="mv">λ</tspan><tspan font-size="19" dy="5">DM</tspan><tspan dy="-5"> </tspan><tspan class="mvb">ℒ</tspan><tspan font-size="19" dy="5">DM</tspan></text>
+</g>
+
+<!-- ============ travelling gradient pulses ============ -->
+<g class="rv flow" data-s="2">
+  <circle r="9" fill="var(--green)" opacity=".2"><animateMotion dur="1.9s" repeatCount="indefinite"><mpath href="#pInit"/></animateMotion></circle>
+  <circle r="4" fill="var(--green)"><animateMotion dur="1.9s" repeatCount="indefinite"><mpath href="#pInit"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="5">
+  <circle r="9" fill="var(--green)" opacity=".2"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#pPrior"/></animateMotion></circle>
+  <circle r="4" fill="var(--green)"><animateMotion dur="3.4s" repeatCount="indefinite"><mpath href="#pPrior"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="6">
+  <circle r="10" fill="var(--accent)" opacity=".22"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#pTemporal"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--accent)"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#pTemporal"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="9">
+  <circle r="10" fill="var(--pink)" opacity=".22"><animateMotion dur="3.1s" repeatCount="indefinite"><mpath href="#pSpatial"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--pink)"><animateMotion dur="3.1s" repeatCount="indefinite"><mpath href="#pSpatial"/></animateMotion></circle>
+</g>
+</svg>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <div class="cap">
+      <span class="idx"><b id="capNum">01</b> / 10 &nbsp;·&nbsp; <span id="capKey">Video generative prior</span></span>
+      <p class="say" id="capSay" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STEPS = [
+    {k:"Video generative prior", ms:2150,
+     s:"A pretrained video diffusion model and its video VAE form the generative prior that everything else is built on."},
+    {k:"Initialization", ms:2150,
+     s:"The video restoration generator starts as a copy of the pretrained diffusion model."},
+    {k:"Forward pass", ms:2584,
+     s:"Low quality frames are encoded by the video VAE, and the generator maps them to a restored latent <em>&#7825;</em>."},
+    {k:"Video distribution matching", ms:2856,
+     s:"The restored latent is noised again at <em>t</em> &#8764; <em>U</em>([20, 400]) and read twice: by a frozen video teacher score and by a trainable fake score."},
+    {k:"Supervision prior", ms:2312,
+     s:"The frozen teacher score comes from the same video prior, so this branch carries temporal knowledge the generator never sees in its own input."},
+    {k:"Temporal supervision", ms:2584,
+     s:"The gradient of the distribution matching loss travels back along the dashed path into the generator, carrying the temporal consistency of the prior with it."},
+    {k:"Frame sampling", ms:2448,
+     s:"A sampled frame is decoded back to pixels, where supervision can be compared against the ground truth frame."},
+    {k:"Spatial losses", ms:2584,
+     s:"An image discriminator produces the adversarial term, while MSE and LPIPS against the ground truth produce the fidelity term."},
+    {k:"Spatial supervision", ms:2448,
+     s:"Both spatial gradients return through the decoder into the generator, sharpening detail inside each frame."},
+    {k:"Overall objective", ms:3808,
+     s:"Everything sums into one generator objective: spatial fidelity and realism from single frames, temporal realism from the video prior."}
+  ];
+
+  var fig = document.getElementById('fig');
+  var groups = [].slice.call(fig.querySelectorAll('[data-s]'));
+  var draws = [].slice.call(fig.querySelectorAll('[data-draw]'));
+  var ticksEl = document.getElementById('ticks');
+  var capNum = document.getElementById('capNum');
+  var capKey = document.getElementById('capKey');
+  var capSay = document.getElementById('capSay');
+  var btn = document.getElementById('toggle');
+  var btnLabel = document.getElementById('toggleLabel');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  var ICON_PAUSE = '<rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/>';
+  var ICON_PLAY  = '<path d="M0 0 L10 6 L0 12 Z"/>';
+
+  draws.forEach(function(el){
+    var L = 0;
+    try { L = el.getTotalLength(); } catch(e) { L = 0; }
+    el.dataset.len = L;
+    if (L) { el.style.strokeDasharray = L + ' ' + L; el.style.strokeDashoffset = L; }
+  });
+
+  var ticks = STEPS.map(function(){
+    var t = document.createElement('div');
+    t.className = 'tick';
+    t.appendChild(document.createElement('i'));
+    ticksEl.appendChild(t);
+    return t;
+  });
+
+  var idx = 0, timer = null, playing = false, resetting = false;
+
+  function paint(i, animateTick){
+    groups.forEach(function(g){
+      var on = Number(g.dataset.s) <= i + 1;
+      var d = Number(g.dataset.d || 0) * 88;
+      g.style.transitionDelay = on ? d + 'ms' : '0ms';
+      g.classList.toggle('on', on);
+    });
+    draws.forEach(function(el){
+      var g = el.closest('[data-s]');
+      var on = g && Number(g.dataset.s) <= i + 1;
+      var d = Number((g && g.dataset.d) || 0) * 88 + 61;
+      el.style.transitionDelay = on ? d + 'ms' : '0ms';
+      el.style.strokeDashoffset = on ? 0 : (el.dataset.len || 0);
+    });
+    capNum.textContent = (i + 1 < 10 ? '0' : '') + (i + 1);
+    capKey.textContent = STEPS[i].k;
+    capSay.innerHTML = STEPS[i].s;
+    ticks.forEach(function(t, j){
+      t.className = 'tick' + (j < i ? ' done' : '');
+    });
+    if (animateTick) {
+      ticks[i].style.setProperty('--dur', STEPS[i].ms + 'ms');
+      void ticks[i].offsetWidth;
+      ticks[i].classList.add('live');
+    } else {
+      ticks[i].classList.add('done');
+    }
+  }
+
+  function schedule(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      if (idx >= STEPS.length - 1) { restart(); }
+      else { idx += 1; paint(idx, true); schedule(); }
+    }, STEPS[idx].ms);
+  }
+
+  function restart(){
+    resetting = true;
+    document.body.classList.add('resetting');
+    groups.forEach(function(g){ g.classList.remove('on'); g.style.transitionDelay = '0ms'; });
+    draws.forEach(function(el){ el.style.transitionDelay = '0ms'; el.style.strokeDashoffset = el.dataset.len || 0; });
+    ticks.forEach(function(t){ t.className = 'tick'; });
+    timer = setTimeout(function(){
+      document.body.classList.remove('resetting');
+      resetting = false;
+      idx = 0; paint(0, true); schedule();
+    }, 320);
+  }
+
+  function play(){
+    playing = true;
+    btnLabel.textContent = 'Pause';
+    btn.setAttribute('aria-label', 'Pause the animation');
+    btn.querySelector('svg').innerHTML = ICON_PAUSE;
+    paint(idx, true);
+    schedule();
+  }
+  function pause(){
+    playing = false;
+    clearTimeout(timer);
+    document.body.classList.remove('resetting');
+    if (resetting) { resetting = false; idx = 0; paint(0, false); }
+    btnLabel.textContent = 'Play';
+    btn.setAttribute('aria-label', 'Play the animation');
+    btn.querySelector('svg').innerHTML = ICON_PLAY;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j <= idx ? ' done' : ''); });
+  }
+  function step(delta){
+    if (playing) pause();
+    idx = Math.min(STEPS.length - 1, Math.max(0, idx + delta));
+    paint(idx, false);
+  }
+
+  btn.addEventListener('click', function(){ playing ? pause() : play(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    else if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playing ? pause() : play(); }
+  });
+
+  if (reduce.matches) { idx = STEPS.length - 1; paint(idx, false); pause(); }
+  else { paint(0, false); play(); }
+})();
+</script>
+
+
+<script>
+/* ---- embed bridge: report height to the host page, accept play/pause ---- */
+(function(){
+  if (window.parent === window) return;
+  var last = 0;
+  function post(){
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (h && Math.abs(h - last) > 1) { last = h; parent.postMessage({type:'shm-anim-height', h:h}, '*'); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(post).observe(document.documentElement);
+  window.addEventListener('load', post);
+  window.addEventListener('resize', post);
+  document.fonts && document.fonts.ready && document.fonts.ready.then(post);
+  post();
+
+  function playing(){
+    var label = document.getElementById('toggleLabel');
+    return !!label && (label.textContent || '').trim() === 'Pause';
+  }
+  function announce(){ parent.postMessage({type:'shm-anim-state', playing:playing()}, '*'); }
+
+  window.addEventListener('message', function(e){
+    var d = e.data || {};
+    if (d.type !== 'shm-anim-cmd') return;
+    var btn = document.getElementById('toggle');
+    if (!btn) return;
+    if (d.cmd === 'prev' || d.cmd === 'next') {
+      /* the figure already steps on ArrowLeft/ArrowRight — hand it one */
+      document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: d.cmd === 'next' ? 'ArrowRight' : 'ArrowLeft', bubbles: true
+      }));
+      announce();
+      return;
+    }
+    if (d.cmd === 'toggle') btn.click();
+    if (d.cmd === 'pause' && playing()) btn.click();
+    if (d.cmd === 'play' && !playing()) btn.click();
+    announce();
+  });
+
+  var lbl = document.getElementById('toggleLabel');
+  if (lbl && window.MutationObserver) new MutationObserver(announce).observe(lbl, {childList:true, characterData:true, subtree:true});
+  window.addEventListener('load', announce);
+  announce();
+})();
+</script>
+</body>
+</html>

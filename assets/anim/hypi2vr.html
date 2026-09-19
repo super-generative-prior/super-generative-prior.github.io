@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>HYPI2VR Restoration Pipeline</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,600&display=swap">
+<style>
+:root{
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+
+  --bg:#F1F3F7;
+  --plate:#FFFFFF;
+  --ink:#141B26;
+  --muted:#5D687A;
+  --hair:#DCE1EA;
+  --plate-hair:#E4E8EF;
+  --grid:rgba(20,27,38,.055);
+  --shadow:0 1px 2px rgba(20,27,38,.05),0 12px 34px rgba(20,27,38,.09);
+
+  --accent:#1E6DCC;
+  --pink:#BE2F88;
+  --green:#28794A;
+  --wire:#39434F;
+
+  --chip-ink:#141C28;
+  --c-blue-f:#D4E6F9;    --c-blue-s:#78A9DF;
+  --c-green-f:#D6EBDA;   --c-green-s:#6DB27E;
+  --c-pink-f:#F8D9E8;    --c-pink-s:#DD9BC2;
+  --c-tan-f:#FBE4CE;     --c-tan-s:#E4AD78;
+  --c-salmon-f:#F8D3C6;  --c-salmon-s:#DE9078;
+  --c-magenta-f:#F9D6EF; --c-magenta-s:#D98BC9;
+  --box-f:#F0F2F6;       --box-s:#C6CCD7;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+    --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+    --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+    --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+  --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+  --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+  --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1720px;margin:0 auto;padding-inline:16px;padding-block:clamp(18px,3vw,34px);display:flex;flex-direction:column;gap:clamp(14px,2vw,20px)}
+
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.head .who{display:flex;flex-direction:column;gap:5px;min-width:0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-size:clamp(20px,2.6vw,27px);font-weight:600;letter-spacing:-.015em;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:66ch;font-size:14px}
+.btn{flex:none;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--plate);border:1px solid var(--hair);border-radius:999px;padding:9px 15px;cursor:pointer;transition:border-color .2s,color .2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn svg{width:11px;height:11px;fill:currentColor}
+
+.plate{background:var(--plate);border:1px solid var(--plate-hair);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.stage{overflow-x:auto;overflow-y:hidden}
+.stage svg{display:block;width:100%;min-width:1180px;height:auto}
+
+.rail{display:flex;flex-direction:column;gap:11px}
+.ticks{display:flex;gap:5px}
+.tick{flex:1;height:3px;border-radius:2px;background:var(--hair);overflow:hidden}
+.tick i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px}
+.tick.done i{width:100%}
+.tick.live i{width:100%;transition:width linear var(--dur,3s)}
+.cap{display:flex;gap:clamp(12px,3vw,28px);align-items:baseline;flex-wrap:wrap;min-height:46px}
+.cap .idx{font-family:var(--mono);font-size:13px;letter-spacing:.1em;color:var(--muted);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.cap .idx b{color:var(--ink);font-weight:500}
+.cap .say{margin:0;font-size:clamp(15px,1.6vw,17px);max-width:88ch;color:var(--ink)}
+.cap .say em{font-family:var(--serif);font-style:italic}
+
+svg text{font-family:var(--sans);font-size:17.4px}
+.t{fill:var(--chip-ink)}
+.lbl{fill:var(--ink);font-weight:500}
+.mini{fill:var(--muted);font-size:14.5px}
+.mv{font-family:var(--serif);font-style:italic}
+.mvb{font-family:var(--serif);font-style:italic;font-weight:600}
+.mv:not([font-size]),.mvb:not([font-size]){font-size:1.13em}
+
+.rv{opacity:0;transition:opacity .34s ease}
+.rv.pop{transform-box:fill-box;transform-origin:center;transform:scale(.94);transition:opacity .34s ease,transform .34s cubic-bezier(.2,.8,.25,1)}
+.rv.on{opacity:1;transform:none}
+.wire{fill:none;stroke:var(--wire);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke-dashoffset .38s cubic-bezier(.3,.7,.3,1)}
+.wire.thin{stroke-width:1.4;opacity:.7}
+.gdash{fill:none;stroke:var(--green);stroke-width:2;stroke-dasharray:9 7;stroke-linecap:round;stroke-linejoin:round}
+.bdash{fill:none;stroke:var(--accent);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.pdash{fill:none;stroke:var(--pink);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.on .gdash,.on .bdash,.on .pdash{animation:march 1.05s linear infinite}
+@keyframes march{to{stroke-dashoffset:-19}}
+.frame{stroke-width:1.5}
+.chip{fill:var(--plate)}
+
+.resetting *{transition-delay:0s!important;transition-duration:.24s!important}
+@media (prefers-reduced-motion:reduce){
+  .rv{transition:none}
+  .on .gdash,.on .bdash,.on .pdash{animation:none}
+  .flow{display:none}
+  .tick.live i{transition:none}
+}
+@media (max-width:640px){.cap{min-height:64px}}
+</style>
+
+
+<style id="shm-embed">
+/* ---- embedded in the Super Hyper Master paper pages ---- */
+html,body{background:transparent}
+/* the host page supplies the heading and the play control */
+.head{display:none}
+/* narrow screens: fit the whole figure instead of forcing a sideways scroll */
+@media (max-width:1000px){
+  .stage svg{min-width:0}
+  .cap{min-height:0}
+  .cap .say{font-size:14px}
+}
+.wrap{max-width:none;padding-inline:0;padding-block:0;gap:14px}
+.plate{border-radius:12px}
+.head{align-items:flex-start}
+@media (max-width:700px){ .head .btn{align-self:flex-start} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="who">
+      <span class="eyebrow">Sequence to sequence restoration</span>
+      <h1>HYPI2VR Restoration Pipeline</h1>
+      <p class="sub">Carrying an image diffusion prior into video: how the injected noise is rebalanced in frequency, warped along motion, and tied across frames.</p>
+    </div>
+    <button class="btn" id="toggle" aria-label="Pause the animation">
+      <svg viewBox="0 0 10 12" aria-hidden="true"><rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/></svg>
+      <span id="toggleLabel">Pause</span>
+    </button>
+  </header>
+
+  <div class="plate">
+    <div class="stage">
+<svg id="fig" viewBox="0 0 1466 820" role="img" aria-label="HYPI2VR video restoration pipeline: each low quality frame is encoded by a degradation removal encoder and restored by a temporally aware network built from an image diffusion prior, with rebalanced noise warped along optical flow from frame to frame and temporal attention linking the frames.">
+<defs>
+  <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7D6EC"/><stop offset="1" stop-color="#EADDC6"/></linearGradient>
+  <linearGradient id="gSea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#53829A"/><stop offset="1" stop-color="#2C5164"/></linearGradient>
+  <linearGradient id="flBase" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F6FD0"/><stop offset="1" stop-color="#7B3FB5"/></linearGradient>
+  <radialGradient id="fl1"><stop offset="0" stop-color="#3FD3A4" stop-opacity=".95"/><stop offset="1" stop-color="#3FD3A4" stop-opacity="0"/></radialGradient>
+  <radialGradient id="fl2"><stop offset="0" stop-color="#E4479C" stop-opacity=".92"/><stop offset="1" stop-color="#E4479C" stop-opacity="0"/></radialGradient>
+  <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="1.2" r="1.1" fill="var(--grid)"/></pattern>
+  <filter id="fLQ" x="-6%" y="-6%" width="112%" height="112%"><feGaussianBlur stdDeviation="2"/><feColorMatrix type="saturate" values="0.6"/></filter>
+  <clipPath id="bboxClip" clipPathUnits="objectBoundingBox"><rect x="0" y="0" width="1" height="1"/></clipPath>
+  <filter id="fNoise" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="4" seed="9"/>
+    <feComponentTransfer><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+    <feColorMatrix type="saturate" values="0.14"/>
+  </filter>
+
+  <marker id="mW" markerWidth="11" markerHeight="8" refX="10.2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L11,4 L0,8 Z" fill="var(--wire)"/></marker>
+  <marker id="mG" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--green)"/></marker>
+  <marker id="mB" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--accent)"/></marker>
+  <marker id="mP" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--pink)"/></marker>
+
+  <g id="scene">
+    <rect width="130" height="92" fill="url(#gSky)"/>
+    <circle cx="105" cy="19" r="8" fill="#FFE1A6" opacity=".9"/>
+    <rect y="50" width="130" height="42" fill="url(#gSea)"/>
+    <path d="M0,50 L32,19 L64,50 Z" fill="#82968B"/>
+    <path d="M92,50 L114,31 L130,45 L130,50 Z" fill="#8FA298"/>
+    <path d="M0,64 L26,33 L56,64 Z" fill="#5C7166"/>
+    <rect x="12" y="49" width="6" height="8" fill="#EBCDA8"/>
+    <rect x="21" y="44" width="5" height="7" fill="#DBB791"/>
+    <rect x="29" y="51" width="7" height="9" fill="#F2DBC0"/>
+    <rect x="38" y="47" width="5" height="7" fill="#E3C3A0"/>
+    <rect x="45" y="55" width="6" height="8" fill="#EBCDA8"/>
+    <rect y="49" width="130" height="1.6" fill="#fff" opacity=".28"/>
+    <rect x="94" y="62" width="22" height="2" fill="#fff" opacity=".22"/>
+    <rect x="84" y="72" width="30" height="2" fill="#fff" opacity=".16"/>
+  </g>
+  <g id="noiseP"><rect width="86" height="54" fill="#6E7884"/><rect width="86" height="54" filter="url(#fNoise)"/></g>
+  <g id="noiseS"><rect width="76" height="54" fill="#6E7884"/><rect width="76" height="54" filter="url(#fNoise)"/></g>
+  <g id="flowP">
+    <rect width="76" height="54" fill="url(#flBase)"/>
+    <ellipse cx="22" cy="18" rx="32" ry="24" fill="url(#fl1)"/>
+    <ellipse cx="58" cy="40" rx="28" ry="22" fill="url(#fl2)"/>
+    <ellipse cx="62" cy="12" rx="20" ry="14" fill="url(#fl1)" opacity=".6"/>
+  </g>
+</defs>
+
+<rect width="1466" height="820" fill="var(--plate)"/>
+<rect width="1466" height="820" fill="url(#dots)"/>
+<g class="rv pop" data-s="1" data-d="0"><path d="M742,124 L838,140 L838,200 L742,216 Z" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="790" y="159.3" text-anchor="middle" font-size="13.5">Deg.</text><text class="t" x="790" y="176.3" text-anchor="middle" font-size="13.5">Removal</text><text class="t" x="790" y="193.3" text-anchor="middle" font-size="13.5">Encoder</text></g>
+<g class="rv" data-s="1" data-d="1"><circle cx="868" cy="170" r="12" fill="var(--plate)" stroke="var(--wire)" stroke-width="1.6"/><path d="M862,170 H874 M868,164 V176" stroke="var(--wire)" stroke-width="1.6" stroke-linecap="round"/></g>
+<g class="rv pop" data-s="1" data-d="2"><rect x="898" y="132" width="230" height="76" rx="9" fill="var(--c-green-f)" stroke="var(--c-green-s)" stroke-width="1.8"/><text class="t" x="1013" y="165.8" text-anchor="middle" font-size="16" font-weight="600">Temporally-Aware</text><text class="t" x="1013" y="186.8" text-anchor="middle" font-size="16" font-weight="600">Restoration Network</text></g>
+<g class="rv pop" data-s="1" data-d="3"><path d="M1158,140 L1254,124 L1254,216 L1158,200 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="1206" y="167.3" text-anchor="middle" font-size="13.5">VAE</text><text class="t" x="1206" y="185.3" text-anchor="middle" font-size="13.5">Decoder</text></g>
+<g class="rv" data-s="1" data-d="1"><path class="wire" data-draw d="M838,170 H853"/></g>
+<g class="rv" data-s="1" data-d="2"><path class="wire" data-draw d="M881,170 H894" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="1" data-d="3"><path class="wire" data-draw d="M1128,170 H1154" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="2" data-d="0"><text class="lbl" x="111" y="114" text-anchor="middle" font-size="15">Input Frame 1</text><g transform="translate(36,124)"><g clip-path="url(#bboxClip)" filter="url(#fLQ)"><use href="#scene"/></g><rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="2" data-d="1"><path class="wire" data-draw d="M170,170 H738" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="2" data-d="4"><text class="lbl" x="1355" y="114" text-anchor="middle" font-size="15">Restored Frame 1</text><g transform="translate(1290,124)"><use href="#scene"/><rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="2" data-d="4"><path class="wire" data-draw d="M1254,170 H1286" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="3" data-d="0"><text class="mini" x="657" y="54" text-anchor="middle">Noise Injection of Frame 1</text><g transform="translate(614,63)"><use href="#noiseP"/><rect width="86" height="54" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="3" data-d="1"><path class="wire" data-draw d="M700,90 H868 V155" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="4" data-d="2"><rect x="454" y="63" width="142" height="54" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/><text class="t" x="525" y="87" text-anchor="middle" font-size="14.5">Noise Energy</text><text class="t" x="525" y="106" text-anchor="middle" font-size="14.5">Rebalancing</text></g>
+<g class="rv" data-s="4" data-d="3"><path class="wire" data-draw d="M596,90 H610" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="4" data-d="0"><text class="mini" x="234" y="54" text-anchor="middle">Sampled Noise</text><g transform="translate(196,63)"><use href="#noiseS"/><rect width="76" height="54" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="4" data-d="1"><path class="wire" data-draw d="M272,90 H450" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="5" data-d="0"><path d="M742,354 L838,370 L838,430 L742,446 Z" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="790" y="389.3" text-anchor="middle" font-size="13.5">Deg.</text><text class="t" x="790" y="406.3" text-anchor="middle" font-size="13.5">Removal</text><text class="t" x="790" y="423.3" text-anchor="middle" font-size="13.5">Encoder</text></g>
+<g class="rv" data-s="5" data-d="1"><circle cx="868" cy="400" r="12" fill="var(--plate)" stroke="var(--wire)" stroke-width="1.6"/><path d="M862,400 H874 M868,394 V406" stroke="var(--wire)" stroke-width="1.6" stroke-linecap="round"/></g>
+<g class="rv pop" data-s="5" data-d="2"><rect x="898" y="362" width="230" height="76" rx="9" fill="var(--c-green-f)" stroke="var(--c-green-s)" stroke-width="1.8"/><text class="t" x="1013" y="395.8" text-anchor="middle" font-size="16" font-weight="600">Temporally-Aware</text><text class="t" x="1013" y="416.8" text-anchor="middle" font-size="16" font-weight="600">Restoration Network</text></g>
+<g class="rv pop" data-s="5" data-d="3"><path d="M1158,370 L1254,354 L1254,446 L1158,430 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="1206" y="397.3" text-anchor="middle" font-size="13.5">VAE</text><text class="t" x="1206" y="415.3" text-anchor="middle" font-size="13.5">Decoder</text></g>
+<g class="rv" data-s="5" data-d="1"><path class="wire" data-draw d="M838,400 H853"/></g>
+<g class="rv" data-s="5" data-d="2"><path class="wire" data-draw d="M881,400 H894" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="5" data-d="3"><path class="wire" data-draw d="M1128,400 H1154" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="5" data-d="0"><text class="lbl" x="111" y="344" text-anchor="middle" font-size="15">Input Frame 2</text><g transform="translate(36,354)"><g clip-path="url(#bboxClip)" filter="url(#fLQ)"><use href="#scene"/></g><rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="5" data-d="1"><path class="wire" data-draw d="M170,400 H738" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="5" data-d="4"><text class="lbl" x="1355" y="344" text-anchor="middle" font-size="15">Restored Frame 2</text><g transform="translate(1290,354)"><use href="#scene"/><rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="5" data-d="4"><path class="wire" data-draw d="M1254,400 H1286" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="6" data-d="0"><text class="mini" x="657" y="284" text-anchor="middle">Noise Injection of Frame 2</text><g transform="translate(614,293)"><use href="#noiseP"/><rect width="86" height="54" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="6" data-d="1"><path class="wire" data-draw d="M700,320 H868 V385" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="6" data-d="2"><rect x="454" y="293" width="142" height="54" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/><text class="t" x="525" y="317" text-anchor="middle" font-size="14.5">Noise Energy</text><text class="t" x="525" y="336" text-anchor="middle" font-size="14.5">Rebalancing</text></g>
+<g class="rv" data-s="6" data-d="3"><path class="wire" data-draw d="M596,320 H610" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="6" data-d="0"><text class="mini" x="234" y="284" text-anchor="middle">Flow</text><g transform="translate(196,293)"><use href="#flowP"/><rect width="76" height="54" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="6" data-d="0"><path class="wire thin" data-draw d="M170,370 H186 V320 H192" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="6" data-d="1"><rect x="296" y="293" width="134" height="54" rx="8" fill="var(--c-magenta-f)" stroke="var(--c-magenta-s)" class="frame"/><text class="t" x="363" y="317" text-anchor="middle" font-size="14.5">Noise Temporal</text><text class="t" x="363" y="336" text-anchor="middle" font-size="14.5">Alignment</text></g>
+<g class="rv" data-s="6" data-d="1"><path class="wire" data-draw d="M272,320 H292" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="6" data-d="2"><path class="wire" data-draw d="M430,320 H450" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="6"><path id="pWarp2" class="pdash" d="M657,117 V246 H363 V289" marker-end="url(#mP)"/></g>
+<g class="rv pop" data-s="7" data-d="0"><path d="M742,584 L838,600 L838,660 L742,676 Z" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="790" y="619.3" text-anchor="middle" font-size="13.5">Deg.</text><text class="t" x="790" y="636.3" text-anchor="middle" font-size="13.5">Removal</text><text class="t" x="790" y="653.3" text-anchor="middle" font-size="13.5">Encoder</text></g>
+<g class="rv" data-s="7" data-d="1"><circle cx="868" cy="630" r="12" fill="var(--plate)" stroke="var(--wire)" stroke-width="1.6"/><path d="M862,630 H874 M868,624 V636" stroke="var(--wire)" stroke-width="1.6" stroke-linecap="round"/></g>
+<g class="rv pop" data-s="7" data-d="2"><rect x="898" y="592" width="230" height="76" rx="9" fill="var(--c-green-f)" stroke="var(--c-green-s)" stroke-width="1.8"/><text class="t" x="1013" y="625.8" text-anchor="middle" font-size="16" font-weight="600">Temporally-Aware</text><text class="t" x="1013" y="646.8" text-anchor="middle" font-size="16" font-weight="600">Restoration Network</text></g>
+<g class="rv pop" data-s="7" data-d="3"><path d="M1158,600 L1254,584 L1254,676 L1158,660 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="1206" y="627.3" text-anchor="middle" font-size="13.5">VAE</text><text class="t" x="1206" y="645.3" text-anchor="middle" font-size="13.5">Decoder</text></g>
+<g class="rv" data-s="7" data-d="1"><path class="wire" data-draw d="M838,630 H853"/></g>
+<g class="rv" data-s="7" data-d="2"><path class="wire" data-draw d="M881,630 H894" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="3"><path class="wire" data-draw d="M1128,630 H1154" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="0"><text class="lbl" x="111" y="574" text-anchor="middle" font-size="15">Input Frame t</text><g transform="translate(36,584)"><g clip-path="url(#bboxClip)" filter="url(#fLQ)"><use href="#scene"/></g><rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="7" data-d="1"><path class="wire" data-draw d="M170,630 H738" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="4"><text class="lbl" x="1355" y="574" text-anchor="middle" font-size="15">Restored Frame t</text><g transform="translate(1290,584)"><use href="#scene"/><rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="7" data-d="4"><path class="wire" data-draw d="M1254,630 H1286" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="0"><text class="mini" x="657" y="514" text-anchor="middle">Noise Injection of Frame t</text><g transform="translate(614,523)"><use href="#noiseP"/><rect width="86" height="54" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="7" data-d="1"><path class="wire" data-draw d="M700,550 H868 V615" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="7" data-d="2"><rect x="454" y="523" width="142" height="54" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/><text class="t" x="525" y="547" text-anchor="middle" font-size="14.5">Noise Energy</text><text class="t" x="525" y="566" text-anchor="middle" font-size="14.5">Rebalancing</text></g>
+<g class="rv" data-s="7" data-d="3"><path class="wire" data-draw d="M596,550 H610" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="0"><text class="mini" x="234" y="514" text-anchor="middle">Flow</text><g transform="translate(196,523)"><use href="#flowP"/><rect width="76" height="54" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g></g>
+<g class="rv" data-s="7" data-d="0"><path class="wire thin" data-draw d="M170,600 H186 V550 H192" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="7" data-d="1"><rect x="296" y="523" width="134" height="54" rx="8" fill="var(--c-magenta-f)" stroke="var(--c-magenta-s)" class="frame"/><text class="t" x="363" y="547" text-anchor="middle" font-size="14.5">Noise Temporal</text><text class="t" x="363" y="566" text-anchor="middle" font-size="14.5">Alignment</text></g>
+<g class="rv" data-s="7" data-d="1"><path class="wire" data-draw d="M272,550 H292" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="2"><path class="wire" data-draw d="M430,550 H450" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7"><path id="pWarp3" class="pdash" d="M657,347 V476 H363 V519" marker-end="url(#mP)"/></g>
+
+<!-- ===== note: the backbone comes from the image restoration model ===== -->
+<g class="rv" data-s="1" data-d="4">
+  <text x="1013" y="74" text-anchor="middle" font-size="14.5" font-weight="500" fill="var(--green)">Modified from Image</text>
+  <text x="1013" y="92" text-anchor="middle" font-size="14.5" font-weight="500" fill="var(--green)">Restoration Network</text>
+  <path id="pMod" class="gdash" d="M1013,100 V128" marker-end="url(#mG)"/>
+</g>
+
+<!-- ===== continuation dots ===== -->
+<g class="rv" data-s="7" data-d="0">
+  <circle cx="200" cy="490" r="4" fill="var(--muted)"/>
+  <circle cx="216" cy="490" r="4" fill="var(--muted)"/>
+  <circle cx="232" cy="490" r="4" fill="var(--muted)"/>
+</g>
+
+<!-- ===== step 8 : noise-to-noise encoder denoising ===== -->
+<g class="rv" data-s="8">
+  <path id="pEnc1" class="gdash" d="M790,220 V350" marker-end="url(#mG)" marker-start="url(#mG)"/>
+  <path id="pEnc2" class="gdash" d="M790,450 V580" marker-end="url(#mG)" marker-start="url(#mG)"/>
+</g>
+
+<!-- ===== step 9 : temporal attention ===== -->
+<g class="rv" data-s="9">
+  <path id="pAtt1" class="bdash" d="M1013,212 V358" marker-end="url(#mB)" marker-start="url(#mB)"/>
+  <path id="pAtt2" class="bdash" d="M1013,442 V588" marker-end="url(#mB)" marker-start="url(#mB)"/>
+</g>
+
+<!-- ===== step 10 : training objectives ===== -->
+<g class="rv" data-s="10">
+  <path d="M36,716 H1430" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="36" y="750" font-size="15" font-weight="600" fill="var(--ink)">Denoising Encoder Objective</text>
+  <text x="36" y="790" font-size="21" fill="var(--ink)"><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">enc</tspan><tspan dy="-5"> = </tspan><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">mse</tspan><tspan dy="-5"> + 0.05 </tspan><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">flow</tspan></text>
+  <text x="640" y="750" font-size="15" font-weight="600" fill="var(--ink)">Restoration Objective</text>
+  <text x="640" y="790" font-size="21" fill="var(--ink)"><tspan>min</tspan><tspan font-size="12" dy="5">&#952;</tspan><tspan dy="-5"> </tspan><tspan>max</tspan><tspan font-size="12" dy="5">&#981;</tspan><tspan dy="-5">  </tspan><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">adv</tspan><tspan dy="-5"> + </tspan><tspan class="mv">&#955;</tspan><tspan font-size="12" dy="5">mse</tspan><tspan dy="-5"> ‖</tspan><tspan class="mv">U</tspan><tspan font-size="12" dy="5">&#952;</tspan><tspan dy="-5">(</tspan><tspan class="mv">y</tspan>) &#8722; <tspan class="mv">x</tspan>‖<tspan font-size="12" dy="-7">2</tspan><tspan dy="7"> + </tspan><tspan class="mv">&#955;</tspan><tspan font-size="12" dy="5">lpips</tspan><tspan dy="-5"> LPIPS(</tspan><tspan class="mv">V</tspan><tspan font-size="12" dy="5">D</tspan><tspan dy="-5">(</tspan><tspan class="mv">U</tspan><tspan font-size="12" dy="5">&#952;</tspan><tspan dy="-5">(</tspan><tspan class="mv">y</tspan>)), <tspan class="mv">I</tspan>)</text>
+</g>
+
+<!-- ===== travelling pulses ===== -->
+<g class="rv flow" data-s="6">
+  <circle r="10" fill="var(--pink)" opacity=".22"><animateMotion dur="2.3s" repeatCount="indefinite"><mpath href="#pWarp2"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--pink)"><animateMotion dur="2.3s" repeatCount="indefinite"><mpath href="#pWarp2"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="7">
+  <circle r="10" fill="var(--pink)" opacity=".22"><animateMotion dur="2.3s" repeatCount="indefinite"><mpath href="#pWarp3"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--pink)"><animateMotion dur="2.3s" repeatCount="indefinite"><mpath href="#pWarp3"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="9">
+  <circle r="4" fill="var(--accent)"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#pAtt1"/></animateMotion></circle>
+  <circle r="4" fill="var(--accent)"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#pAtt2"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="2">
+  <circle r="4" fill="var(--green)"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath href="#pMod"/></animateMotion></circle>
+</g>
+
+<!-- ===== annotation chips, drawn above the pulses ===== -->
+<g class="rv" data-s="8">
+  <rect class="chip" x="690" y="466" width="232" height="30" rx="15" stroke="var(--green)" stroke-width="1.5"/>
+  <text x="806" y="486" text-anchor="middle" font-size="14.5" font-weight="500" fill="var(--green)">Noise-to-Noise Denoising</text>
+</g>
+<g class="rv" data-s="9">
+  <rect class="chip" x="925" y="248" width="176" height="30" rx="15" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="1013" y="268" text-anchor="middle" font-size="14.5" font-weight="500" fill="var(--accent)">Temporal Attention</text>
+</g>
+</svg>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <div class="cap">
+      <span class="idx"><b id="capNum">01</b> / 10 &nbsp;&#183;&nbsp; <span id="capKey">Image restoration backbone</span></span>
+      <p class="say" id="capSay" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STEPS = [
+    {k:"Image restoration backbone", ms:2176,
+     s:"HYPI2VR starts from an image restoration model built on a pretrained image diffusion prior: a degradation removal encoder, a latent restoration network, and the frozen VAE decoder."},
+    {k:"Per frame restoration", ms:2312,
+     s:"Every low quality frame runs through that same backbone. It is encoded, restored in latent space, and decoded back to pixels."},
+    {k:"Noise injection", ms:2448,
+     s:"Stochastic noise is injected into the latent. That randomness is what lets the network synthesize detail the low quality input never carried."},
+    {k:"Noise energy rebalancing", ms:2720,
+     s:"A high pass mask keeps the stochasticity in the high frequencies and suppresses the low frequency part, which is what pulls the result away from the structure of the input."},
+    {k:"The next frame", ms:2312,
+     s:"Frame 2 runs through the same pipeline. Left alone it would draw its own independent noise, and the synthesized textures would flicker."},
+    {k:"Motion aligned noise", ms:2720,
+     s:"Optical flow warps the rebalanced noise from frame 1 onto frame 2, so a moving region keeps its stochastic pattern instead of sampling a new one."},
+    {k:"Sequence to sequence", ms:2448,
+     s:"The noise is carried frame by frame across the whole clip, so synthesized detail travels with the content rather than against it."},
+    {k:"Noise to noise encoder", ms:2584,
+     s:"The encoder adds a frame dependent perturbation of its own. Training it against flow aligned neighbouring latents removes that, with no clean latent needed as supervision."},
+    {k:"Temporal attention", ms:2584,
+     s:"A temporal attention block after each spatial block links the frames directly, covering the motion and occlusion that flow based propagation cannot."},
+    {k:"Training objectives", ms:3808,
+     s:"The encoder is trained on pixel reconstruction plus a flow consistency term. The restoration network is trained adversarially with MSE and LPIPS, on noise produced by the rebalancing and warping above."}
+  ];
+
+  var fig = document.getElementById('fig');
+  var groups = [].slice.call(fig.querySelectorAll('[data-s]'));
+  var draws = [].slice.call(fig.querySelectorAll('[data-draw]'));
+  var ticksEl = document.getElementById('ticks');
+  var capNum = document.getElementById('capNum');
+  var capKey = document.getElementById('capKey');
+  var capSay = document.getElementById('capSay');
+  var btn = document.getElementById('toggle');
+  var btnLabel = document.getElementById('toggleLabel');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  var ICON_PAUSE = '<rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/>';
+  var ICON_PLAY  = '<path d="M0 0 L10 6 L0 12 Z"/>';
+
+  draws.forEach(function(el){
+    var L = 0;
+    try { L = el.getTotalLength(); } catch(e) { L = 0; }
+    el.dataset.len = L;
+    if (L) { el.style.strokeDasharray = L + ' ' + L; el.style.strokeDashoffset = L; }
+  });
+
+  var ticks = STEPS.map(function(){
+    var t = document.createElement('div');
+    t.className = 'tick';
+    t.appendChild(document.createElement('i'));
+    ticksEl.appendChild(t);
+    return t;
+  });
+
+  var idx = 0, timer = null, playing = false, resetting = false;
+
+  function paint(i, animateTick){
+    groups.forEach(function(g){
+      var on = Number(g.dataset.s) <= i + 1;
+      var d = Number(g.dataset.d || 0) * 82;
+      g.style.transitionDelay = on ? d + 'ms' : '0ms';
+      g.classList.toggle('on', on);
+    });
+    draws.forEach(function(el){
+      var g = el.closest('[data-s]');
+      var on = g && Number(g.dataset.s) <= i + 1;
+      var d = Number((g && g.dataset.d) || 0) * 82 + 54;
+      el.style.transitionDelay = on ? d + 'ms' : '0ms';
+      el.style.strokeDashoffset = on ? 0 : (el.dataset.len || 0);
+    });
+    capNum.textContent = (i + 1 < 10 ? '0' : '') + (i + 1);
+    capKey.textContent = STEPS[i].k;
+    capSay.innerHTML = STEPS[i].s;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j < i ? ' done' : ''); });
+    if (animateTick) {
+      ticks[i].style.setProperty('--dur', STEPS[i].ms + 'ms');
+      void ticks[i].offsetWidth;
+      ticks[i].classList.add('live');
+    } else {
+      ticks[i].classList.add('done');
+    }
+  }
+
+  function schedule(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      if (idx >= STEPS.length - 1) { restart(); }
+      else { idx += 1; paint(idx, true); schedule(); }
+    }, STEPS[idx].ms);
+  }
+
+  function restart(){
+    resetting = true;
+    document.body.classList.add('resetting');
+    groups.forEach(function(g){ g.classList.remove('on'); g.style.transitionDelay = '0ms'; });
+    draws.forEach(function(el){ el.style.transitionDelay = '0ms'; el.style.strokeDashoffset = el.dataset.len || 0; });
+    ticks.forEach(function(t){ t.className = 'tick'; });
+    timer = setTimeout(function(){
+      document.body.classList.remove('resetting');
+      resetting = false;
+      idx = 0; paint(0, true); schedule();
+    }, 320);
+  }
+
+  function play(){
+    playing = true;
+    btnLabel.textContent = 'Pause';
+    btn.setAttribute('aria-label', 'Pause the animation');
+    btn.querySelector('svg').innerHTML = ICON_PAUSE;
+    paint(idx, true);
+    schedule();
+  }
+  function pause(){
+    playing = false;
+    clearTimeout(timer);
+    document.body.classList.remove('resetting');
+    if (resetting) { resetting = false; idx = 0; paint(0, false); }
+    btnLabel.textContent = 'Play';
+    btn.setAttribute('aria-label', 'Play the animation');
+    btn.querySelector('svg').innerHTML = ICON_PLAY;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j <= idx ? ' done' : ''); });
+  }
+  function step(delta){
+    if (playing) pause();
+    idx = Math.min(STEPS.length - 1, Math.max(0, idx + delta));
+    paint(idx, false);
+  }
+
+  btn.addEventListener('click', function(){ playing ? pause() : play(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    else if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playing ? pause() : play(); }
+  });
+
+  if (reduce.matches) { idx = STEPS.length - 1; paint(idx, false); pause(); }
+  else { paint(0, false); play(); }
+})();
+</script>
+
+
+<script>
+/* ---- embed bridge: report height to the host page, accept play/pause ---- */
+(function(){
+  if (window.parent === window) return;
+  var last = 0;
+  function post(){
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (h && Math.abs(h - last) > 1) { last = h; parent.postMessage({type:'shm-anim-height', h:h}, '*'); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(post).observe(document.documentElement);
+  window.addEventListener('load', post);
+  window.addEventListener('resize', post);
+  document.fonts && document.fonts.ready && document.fonts.ready.then(post);
+  post();
+
+  function playing(){
+    var label = document.getElementById('toggleLabel');
+    return !!label && (label.textContent || '').trim() === 'Pause';
+  }
+  function announce(){ parent.postMessage({type:'shm-anim-state', playing:playing()}, '*'); }
+
+  window.addEventListener('message', function(e){
+    var d = e.data || {};
+    if (d.type !== 'shm-anim-cmd') return;
+    var btn = document.getElementById('toggle');
+    if (!btn) return;
+    if (d.cmd === 'prev' || d.cmd === 'next') {
+      /* the figure already steps on ArrowLeft/ArrowRight — hand it one */
+      document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: d.cmd === 'next' ? 'ArrowRight' : 'ArrowLeft', bubbles: true
+      }));
+      announce();
+      return;
+    }
+    if (d.cmd === 'toggle') btn.click();
+    if (d.cmd === 'pause' && playing()) btn.click();
+    if (d.cmd === 'play' && !playing()) btn.click();
+    announce();
+  });
+
+  var lbl = document.getElementById('toggleLabel');
+  if (lbl && window.MutationObserver) new MutationObserver(announce).observe(lbl, {childList:true, characterData:true, subtree:true});
+  window.addEventListener('load', announce);
+  announce();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>SUPIR Restoration Workflow</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,600&display=swap">
+<style>
+:root{
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+
+  --bg:#F1F3F7;
+  --plate:#FFFFFF;
+  --ink:#141B26;
+  --muted:#5D687A;
+  --hair:#DCE1EA;
+  --plate-hair:#E4E8EF;
+  --grid:rgba(20,27,38,.055);
+  --shadow:0 1px 2px rgba(20,27,38,.05),0 12px 34px rgba(20,27,38,.09);
+
+  --accent:#1E6DCC;
+  --pink:#BE2F88;
+  --green:#28794A;
+  --wire:#39434F;
+
+  --chip-ink:#141C28;
+  --c-blue-f:#D4E6F9;    --c-blue-s:#78A9DF;
+  --c-green-f:#D6EBDA;   --c-green-s:#6DB27E;
+  --c-pink-f:#F8D9E8;    --c-pink-s:#DD9BC2;
+  --c-tan-f:#FBE4CE;     --c-tan-s:#E4AD78;
+  --c-salmon-f:#F8D3C6;  --c-salmon-s:#DE9078;
+  --c-magenta-f:#F9D6EF; --c-magenta-s:#D98BC9;
+  --box-f:#F0F2F6;       --box-s:#C6CCD7;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+    --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+    --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+    --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+  --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+  --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+  --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1720px;margin:0 auto;padding-inline:16px;padding-block:clamp(18px,3vw,34px);display:flex;flex-direction:column;gap:clamp(14px,2vw,20px)}
+
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.head .who{display:flex;flex-direction:column;gap:5px;min-width:0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-size:clamp(20px,2.6vw,27px);font-weight:600;letter-spacing:-.015em;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:66ch;font-size:14px}
+.btn{flex:none;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--plate);border:1px solid var(--hair);border-radius:999px;padding:9px 15px;cursor:pointer;transition:border-color .2s,color .2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn svg{width:11px;height:11px;fill:currentColor}
+
+.plate{background:var(--plate);border:1px solid var(--plate-hair);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.stage{overflow-x:auto;overflow-y:hidden}
+.stage svg{display:block;width:100%;min-width:1180px;height:auto}
+
+.rail{display:flex;flex-direction:column;gap:11px}
+.ticks{display:flex;gap:5px}
+.tick{flex:1;height:3px;border-radius:2px;background:var(--hair);overflow:hidden}
+.tick i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px}
+.tick.done i{width:100%}
+.tick.live i{width:100%;transition:width linear var(--dur,3s)}
+.cap{display:flex;gap:clamp(12px,3vw,28px);align-items:baseline;flex-wrap:wrap;min-height:46px}
+.cap .idx{font-family:var(--mono);font-size:13px;letter-spacing:.1em;color:var(--muted);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.cap .idx b{color:var(--ink);font-weight:500}
+.cap .say{margin:0;font-size:clamp(15px,1.6vw,17px);max-width:88ch;color:var(--ink)}
+.cap .say em{font-family:var(--serif);font-style:italic}
+
+svg text{font-family:var(--sans);font-size:17.4px}
+.t{fill:var(--chip-ink)}
+.lbl{fill:var(--ink);font-weight:500}
+.mini{fill:var(--muted);font-size:14.5px}
+.mv{font-family:var(--serif);font-style:italic}
+.mvb{font-family:var(--serif);font-style:italic;font-weight:600}
+.mv:not([font-size]),.mvb:not([font-size]){font-size:1.13em}
+
+.rv{opacity:0;transition:opacity .34s ease}
+.rv.pop{transform-box:fill-box;transform-origin:center;transform:scale(.94);transition:opacity .34s ease,transform .34s cubic-bezier(.2,.8,.25,1)}
+.rv.on{opacity:1;transform:none}
+.wire{fill:none;stroke:var(--wire);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke-dashoffset .38s cubic-bezier(.3,.7,.3,1)}
+.wire.thin{stroke-width:1.4;opacity:.7}
+.gdash{fill:none;stroke:var(--green);stroke-width:2;stroke-dasharray:9 7;stroke-linecap:round;stroke-linejoin:round}
+.bdash{fill:none;stroke:var(--accent);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.pdash{fill:none;stroke:var(--pink);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.on .gdash,.on .bdash,.on .pdash{animation:march 1.05s linear infinite}
+@keyframes march{to{stroke-dashoffset:-19}}
+.frame{stroke-width:1.5}
+.chip{fill:var(--plate)}
+
+.resetting *{transition-delay:0s!important;transition-duration:.24s!important}
+@media (prefers-reduced-motion:reduce){
+  .rv{transition:none}
+  .on .gdash,.on .bdash,.on .pdash{animation:none}
+  .flow{display:none}
+  .tick.live i{transition:none}
+}
+@media (max-width:640px){.cap{min-height:64px}}
+</style>
+
+
+<style id="shm-embed">
+/* ---- embedded in the Super Hyper Master paper pages ---- */
+html,body{background:transparent}
+/* the host page supplies the heading and the play control */
+.head{display:none}
+/* narrow screens: fit the whole figure instead of forcing a sideways scroll */
+@media (max-width:1000px){
+  .stage svg{min-width:0}
+  .cap{min-height:0}
+  .cap .say{font-size:14px}
+}
+.wrap{max-width:none;padding-inline:0;padding-block:0;gap:14px}
+.plate{border-radius:12px}
+.head{align-items:flex-start}
+@media (max-width:700px){ .head .btn{align-self:flex-start} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="who">
+      <span class="eyebrow">Scaling up image restoration</span>
+      <h1>SUPIR Restoration Workflow</h1>
+      <p class="sub">A large diffusion prior steered by a trimmed adaptor, told what it is looking at by a multimodal LLM, and held to the input by restoration guided sampling.</p>
+    </div>
+    <button class="btn" id="toggle" aria-label="Pause the animation">
+      <svg viewBox="0 0 10 12" aria-hidden="true"><rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/></svg>
+      <span id="toggleLabel">Pause</span>
+    </button>
+  </header>
+
+  <div class="plate">
+    <div class="stage">
+<svg id="fig" viewBox="0 0 1520 780" role="img" aria-label="SUPIR workflow: a degradation robust encoder maps the low quality image into latent space, a multimodal language model writes a prompt describing it, a trimmed ControlNet steers a pretrained SDXL prior through T sampling steps with restoration guidance and negative quality classifier free guidance, and the latent is decoded into the restored image.">
+<defs>
+  <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7D6EC"/><stop offset="1" stop-color="#EADDC6"/></linearGradient>
+  <linearGradient id="gSea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#53829A"/><stop offset="1" stop-color="#2C5164"/></linearGradient>
+  <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="1.2" r="1.1" fill="var(--grid)"/></pattern>
+  <filter id="fLQ" x="-6%" y="-6%" width="112%" height="112%"><feGaussianBlur stdDeviation="2.2"/><feColorMatrix type="saturate" values="0.55"/></filter>
+  <filter id="fMid" x="-6%" y="-6%" width="112%" height="112%"><feGaussianBlur stdDeviation="0.9"/></filter>
+  <clipPath id="bboxClip" clipPathUnits="objectBoundingBox"><rect x="0" y="0" width="1" height="1"/></clipPath>
+  <filter id="fNoise" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="4" seed="9"/>
+    <feComponentTransfer><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+    <feColorMatrix type="saturate" values="0.14"/>
+  </filter>
+
+  <marker id="mW" markerWidth="11" markerHeight="8" refX="10.2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L11,4 L0,8 Z" fill="var(--wire)"/></marker>
+  <marker id="mG" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--green)"/></marker>
+  <marker id="mP" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--pink)"/></marker>
+
+  <g id="scene">
+    <rect width="130" height="92" fill="url(#gSky)"/>
+    <circle cx="105" cy="19" r="8" fill="#FFE1A6" opacity=".9"/>
+    <rect y="50" width="130" height="42" fill="url(#gSea)"/>
+    <path d="M0,50 L32,19 L64,50 Z" fill="#82968B"/>
+    <path d="M92,50 L114,31 L130,45 L130,50 Z" fill="#8FA298"/>
+    <path d="M0,64 L26,33 L56,64 Z" fill="#5C7166"/>
+    <rect x="12" y="49" width="6" height="8" fill="#EBCDA8"/>
+    <rect x="21" y="44" width="5" height="7" fill="#DBB791"/>
+    <rect x="29" y="51" width="7" height="9" fill="#F2DBC0"/>
+    <rect x="38" y="47" width="5" height="7" fill="#E3C3A0"/>
+    <rect x="45" y="55" width="6" height="8" fill="#EBCDA8"/>
+    <rect y="49" width="130" height="1.6" fill="#fff" opacity=".28"/>
+    <rect x="94" y="62" width="22" height="2" fill="#fff" opacity=".22"/>
+    <rect x="84" y="72" width="30" height="2" fill="#fff" opacity=".16"/>
+  </g>
+  <g id="noiseP"><rect width="70" height="44" fill="#6E7884"/><rect width="70" height="44" filter="url(#fNoise)"/></g>
+  <g id="snow" stroke="#4E9AD9" stroke-width="1.7" stroke-linecap="round" fill="none">
+    <path d="M0,-8 V8 M-7,-4 L7,4 M-7,4 L7,-4"/>
+    <path d="M-2.6,-5.6 L0,-8 L2.6,-5.6 M-2.6,5.6 L0,8 L2.6,5.6"/>
+  </g>
+  <g id="flame">
+    <path d="M0,-9 C4.6,-4.2 7,-1.4 7,2 C7,6 3.9,9 0,9 C-3.9,9 -7,6 -7,2 C-7,-1.8 -3.4,-3.6 -1.4,-7 C-1,-7.7 -0.5,-8.4 0,-9 Z" fill="#E8843C"/>
+    <path d="M0,-1.6 C2.2,0.6 3.1,2 3.1,3.6 C3.1,5.5 1.7,6.8 0,6.8 C-1.7,6.8 -3.1,5.5 -3.1,3.6 C-3.1,2.1 -1.6,1.1 -0.7,-0.4 C-0.5,-0.8 -0.2,-1.2 0,-1.6 Z" fill="#F7D046"/>
+  </g>
+</defs>
+
+<rect width="1520" height="780" fill="var(--plate)"/>
+<rect width="1520" height="780" fill="url(#dots)"/>
+
+<!-- ===== step 1 : low quality input and the degradation-robust encoder ===== -->
+<g class="rv" data-s="1" data-d="0">
+  <g transform="translate(70,104)"><use href="#flame"/></g>
+  <text class="mini" x="90" y="110">Trainable</text>
+  <g transform="translate(70,142)"><use href="#snow"/></g>
+  <text class="mini" x="90" y="148">Fixed</text>
+</g>
+<g class="rv" data-s="1" data-d="1">
+  <text class="lbl" x="105" y="354" text-anchor="middle" font-size="14.5">Low-Quality Image</text>
+  <g transform="translate(40,364)"><g clip-path="url(#bboxClip)" filter="url(#fLQ)"><use href="#scene"/></g>
+  <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g>
+</g>
+<g class="rv" data-s="1" data-d="2"><path class="wire" data-draw d="M174,410 H206" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="1" data-d="3">
+  <path d="M214,364 L310,380 L310,440 L214,456 Z" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/>
+  <text class="t" x="262" y="400.3" text-anchor="middle" font-size="11.5">Degradation</text>
+  <text class="t" x="262" y="416.3" text-anchor="middle" font-size="11.5">Robust</text>
+  <text class="t" x="262" y="432.3" text-anchor="middle" font-size="11.5">Encoder</text>
+  <g transform="translate(262,478)"><use href="#flame"/></g>
+</g>
+
+<!-- ===== step 2 : the model reads the picture ===== -->
+<g class="rv" data-s="2" data-d="0">
+  <path class="wire" data-draw d="M314,410 H330 V146 H382" marker-end="url(#mW)"/>
+  <circle cx="330" cy="384" r="3.8" fill="var(--wire)"/>
+</g>
+<g class="rv pop" data-s="2" data-d="1">
+  <path d="M386,116 L482,100 L482,192 L386,176 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="434" y="136.3" text-anchor="middle" font-size="12.5">LDM</text>
+  <text class="t" x="434" y="152.3" text-anchor="middle" font-size="12.5">Image</text>
+  <text class="t" x="434" y="168.3" text-anchor="middle" font-size="12.5">Decoder</text>
+  <g transform="translate(434,214)"><use href="#snow"/></g>
+</g>
+<g class="rv" data-s="2" data-d="2"><path class="wire" data-draw d="M482,146 H506" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="2" data-d="2">
+  <text class="mini" x="575" y="92" text-anchor="middle"><tspan class="mv">x</tspan>&#8242;<tspan font-size="11" dy="4">LQ</tspan></text>
+  <g transform="translate(510,100)"><g clip-path="url(#bboxClip)" filter="url(#fMid)"><use href="#scene"/></g>
+  <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g>
+</g>
+<g class="rv" data-s="2" data-d="3"><path class="wire" data-draw d="M644,146 H672" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="2" data-d="4">
+  <rect x="676" y="112" width="180" height="68" rx="8" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="766" y="142.3" text-anchor="middle" font-size="14.5">Multi-Modal Large</text>
+  <text class="t" x="766" y="162.3" text-anchor="middle" font-size="14.5">Language Model</text>
+  <g transform="translate(694,200)"><use href="#snow"/></g>
+</g>
+
+<!-- ===== step 3 : the text prompt ===== -->
+<g class="rv" data-s="3" data-d="0"><path class="wire" data-draw d="M856,146 H886" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="3" data-d="1">
+  <rect x="890" y="60" width="440" height="102" rx="10" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" stroke-width="1.8"/>
+  <text class="t" x="908" y="86" font-size="13.5">The image shows a coastal village with <tspan fill="#A9601A" font-weight="600">pale stone</tspan></text>
+  <text class="t" x="908" y="107" font-size="13.5"><tspan fill="#A9601A" font-weight="600">houses</tspan> stacked on a <tspan fill="#A9601A" font-weight="600">steep green hillside</tspan> above</text>
+  <text class="t" x="908" y="128" font-size="13.5">a calm blue sea, soft afternoon light, with <tspan fill="#A9601A" font-weight="600">fine</tspan></text>
+  <text class="t" x="908" y="149" font-size="13.5"><tspan fill="#A9601A" font-weight="600">texture</tspan> on the walls and the water.</text>
+  <text class="mini" x="1330" y="50" text-anchor="end" fill="var(--c-tan-s)">Text Prompt</text>
+</g>
+
+<!-- ===== step 4 : the generative prior ===== -->
+<g class="rv" data-s="4" data-d="0">
+  <text class="mini" x="375" y="478" text-anchor="middle"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">T</tspan><tspan dy="-4"> &#8764; </tspan><tspan class="mv">N</tspan>(0, <tspan class="mv">&#963;</tspan><tspan font-size="11" dy="4">T</tspan><tspan font-size="11" dy="-9">2</tspan><tspan dy="5"> </tspan><tspan class="mv">I</tspan>)</text>
+  <g transform="translate(340,414)"><use href="#noiseP"/>
+  <rect width="70" height="44" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g>
+</g>
+<g class="rv" data-s="4" data-d="1"><path class="wire" data-draw d="M410,436 H432" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="4" data-d="2">
+  <rect x="440" y="414" width="196" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="538" y="442" text-anchor="middle" font-size="14.5">Pre-Trained SDXL</text>
+  <g transform="translate(448,458)"><use href="#snow"/></g>
+</g>
+
+<!-- ===== step 5 : the trimmed adaptor ===== -->
+<g class="rv pop" data-s="5" data-d="1">
+  <rect x="440" y="362" width="196" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/>
+  <text class="t" x="538" y="390" text-anchor="middle" font-size="14.5">Trimmed ControlNet</text>
+  <g transform="translate(448,362)"><use href="#flame"/></g>
+</g>
+<g class="rv" data-s="5" data-d="0">
+  <path class="wire" data-draw d="M330,384 H432" marker-end="url(#mW)"/>
+  <text class="mini" x="392" y="374" text-anchor="middle"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">LQ</tspan></text>
+</g>
+<g class="rv" data-s="5" data-d="2"><path class="wire" data-draw d="M538,406 V410"/></g>
+
+<!-- ===== step 6 : T sampling steps ===== -->
+<g class="rv" data-s="6" data-d="0"><path class="wire" data-draw d="M636,436 H658"/></g>
+<g class="rv" data-s="6" data-d="1">
+  <text x="686" y="376" text-anchor="middle" font-size="16" font-weight="600" fill="var(--ink)">&#215;<tspan class="mv">T</tspan></text>
+  <circle cx="664" cy="422" r="4" fill="var(--muted)"/>
+  <circle cx="686" cy="422" r="4" fill="var(--muted)"/>
+  <circle cx="708" cy="422" r="4" fill="var(--muted)"/>
+</g>
+<g class="rv" data-s="6" data-d="2"><path class="wire" data-draw d="M714,436 H736" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="6" data-d="3">
+  <rect x="744" y="362" width="196" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/>
+  <text class="t" x="842" y="390" text-anchor="middle" font-size="14.5">Trimmed ControlNet</text>
+  <g transform="translate(752,362)"><use href="#flame"/></g>
+  <rect x="744" y="414" width="196" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="842" y="442" text-anchor="middle" font-size="14.5">Pre-Trained SDXL</text>
+  <g transform="translate(752,458)"><use href="#snow"/></g>
+  <path class="wire" d="M842,406 V410"/>
+</g>
+<g class="rv" data-s="6" data-d="4">
+  <path d="M440,470 V480 H940 V470" fill="none" stroke="var(--muted)" stroke-width="1.4" opacity=".6"/>
+  <text x="690" y="502" text-anchor="middle" font-size="14.5" font-weight="500" fill="var(--ink)">EDM Sampler with Restoration Guidance</text>
+</g>
+
+<!-- ===== step 7 : restoration-guided sampling ===== -->
+<g class="rv" data-s="7">
+  <path d="M40,540 H740" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="40" y="572" font-size="15" font-weight="600" fill="var(--green)">Restoration-Guided Sampling</text>
+  <path d="M90,626 H420" stroke="var(--hair)" stroke-width="2" fill="none"/>
+  <circle cx="90" cy="626" r="5.5" fill="var(--wire)"/>
+  <circle cx="420" cy="626" r="5.5" fill="var(--wire)"/>
+  <circle cx="326" cy="626" r="7" fill="var(--green)"/>
+  <path id="pPull" class="gdash" d="M412,626 H336" marker-end="url(#mG)"/>
+  <text class="mini" x="90" y="652" text-anchor="middle"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">LQ</tspan></text>
+  <text class="mini" x="420" y="652" text-anchor="middle"><tspan class="mv">z&#770;</tspan><tspan font-size="11" dy="4">t&#8722;1</tspan></text>
+  <text class="mini" x="326" y="606" text-anchor="middle" fill="var(--green)"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">t&#8722;1</tspan></text>
+  <text x="470" y="620" font-size="19" fill="var(--ink)"><tspan class="mv">k</tspan><tspan font-size="12" dy="5">t</tspan><tspan dy="-5"> = (</tspan><tspan class="mv">&#963;</tspan><tspan font-size="12" dy="5">t</tspan><tspan dy="-5"> / </tspan><tspan class="mv">&#963;</tspan><tspan font-size="12" dy="5">T</tspan><tspan dy="-5">)</tspan><tspan font-size="12" dy="-8"><tspan class="mv">&#964;</tspan>r</tspan></text>
+  <text class="mini" x="470" y="648">large early: the result follows the input</text>
+  <text class="mini" x="470" y="668">small late: detail is free to generate</text>
+</g>
+
+<!-- ===== step 8 : negative-quality prompts and CFG ===== -->
+<g class="rv pop" data-s="8" data-d="0">
+  <rect x="890" y="176" width="440" height="72" rx="10" fill="var(--c-pink-f)" stroke="var(--c-pink-s)" stroke-width="1.8"/>
+  <text class="t" x="908" y="207.8" font-size="13.5">oil painting, cartoon, blur, dirty, messy, low quality,</text>
+  <text class="t" x="908" y="228.8" font-size="13.5">deformation, low resolution, oversmooth</text>
+  <text class="mini" x="876" y="206" text-anchor="end" fill="var(--pink)">Negative-Quality</text>
+  <text class="mini" x="876" y="226" text-anchor="end" fill="var(--pink)">Prompt</text>
+</g>
+<g class="rv" data-s="8" data-d="1">
+  <path d="M780,540 H1480" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="780" y="572" font-size="15" font-weight="600" fill="var(--pink)">Negative-Quality Classifier-Free Guidance</text>
+  <text x="780" y="618" font-size="19" fill="var(--ink)"><tspan class="mv">z</tspan><tspan font-size="12" dy="5">t&#8722;1</tspan><tspan dy="-5"> = </tspan><tspan class="mv">z</tspan><tspan font-size="12" dy="5">t&#8722;1</tspan><tspan font-size="12" dy="-17">pos</tspan><tspan dy="12"> + </tspan><tspan class="mv">&#955;</tspan><tspan font-size="12" dy="5">cfg</tspan><tspan dy="-5"> (</tspan><tspan class="mv">z</tspan><tspan font-size="12" dy="5">t&#8722;1</tspan><tspan font-size="12" dy="-17">pos</tspan><tspan dy="12"> &#8722; </tspan><tspan class="mv">z</tspan><tspan font-size="12" dy="5">t&#8722;1</tspan><tspan font-size="12" dy="-17">neg</tspan><tspan dy="12">)</tspan></text>
+  <text class="mini" x="780" y="652">100K negative-quality images were added to the training set, so the model</text>
+  <text class="mini" x="780" y="672">actually learns the concept it is being told to avoid.</text>
+</g>
+
+<!-- ===== step 9 : decode the result ===== -->
+<g class="rv" data-s="9" data-d="0">
+  <path class="wire" data-draw d="M940,436 H996" marker-end="url(#mW)"/>
+  <text class="mini" x="968" y="424" text-anchor="middle"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">0</tspan></text>
+</g>
+<g class="rv pop" data-s="9" data-d="1">
+  <path d="M1000,380 L1096,364 L1096,456 L1000,440 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="1048" y="400.3" text-anchor="middle" font-size="12.5">LDM</text>
+  <text class="t" x="1048" y="416.3" text-anchor="middle" font-size="12.5">Image</text>
+  <text class="t" x="1048" y="432.3" text-anchor="middle" font-size="12.5">Decoder</text>
+  <g transform="translate(1048,478)"><use href="#snow"/></g>
+</g>
+<g class="rv" data-s="9" data-d="2"><path class="wire" data-draw d="M1096,410 H1136" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="9" data-d="3">
+  <text class="lbl" x="1205" y="354" text-anchor="middle" font-size="14.5">Restoration Result</text>
+  <g transform="translate(1140,364)"><use href="#scene"/>
+  <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g>
+</g>
+
+<!-- ===== step 10 : the scale behind it ===== -->
+<g class="rv" data-s="10">
+  <path d="M40,706 H1480" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text class="mini" x="40" y="740">20M high-quality 1024&#215;1024 images with text annotations &#183; 70K unaligned faces &#183; 100K negative-quality samples &#183; SDXL Base as the prior &#183; 64 A6000 GPUs for 10 days</text>
+</g>
+
+<!-- ===== travelling pulses ===== -->
+<g class="rv flow" data-s="7">
+  <circle r="9" fill="var(--green)" opacity=".22"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#pPull"/></animateMotion></circle>
+  <circle r="4" fill="var(--green)"><animateMotion dur="1.8s" repeatCount="indefinite"><mpath href="#pPull"/></animateMotion></circle>
+</g>
+</svg>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <div class="cap">
+      <span class="idx"><b id="capNum">01</b> / 10 &nbsp;&#183;&nbsp; <span id="capKey">Degradation-robust encoder</span></span>
+      <p class="say" id="capSay" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STEPS = [
+    {k:"Degradation-robust encoder", ms:2584,
+     s:"The low quality image is mapped into the latent space of the prior. A plain VAE encoder would read the artifacts as content, so the encoder is first adapted to be robust to degradation."},
+    {k:"Reading the picture", ms:2584,
+     s:"That latent is decoded back to pixels and handed to a multimodal language model, which describes what is actually in the image."},
+    {k:"Text prompt", ms:2720,
+     s:"The description becomes the prompt. It carries the model's understanding of the content, and it is also where a person can step in and say what a blurred region should be."},
+    {k:"The generative prior", ms:2448,
+     s:"Sampling starts from pure noise inside a frozen pretrained SDXL, the largest generative prior this pipeline could be scaled to."},
+    {k:"Trimmed adaptor", ms:2992,
+     s:"What steers it is a ControlNet with half the ViT blocks trimmed out of the trainable copy, wired in through ZeroSFT modules rather than plain zero convolutions, so the low quality latent can control generation at the pixel level."},
+    {k:"T sampling steps", ms:2448,
+     s:"That pair runs for T steps of an EDM sampler, every step conditioned on the low quality latent and on the prompt."},
+    {k:"Restoration guidance", ms:2992,
+     s:"At each step the prediction is pulled back toward the low quality latent with weight k. Early on, while structure is being decided, the pull is strong; later, while texture is being drawn, it fades away."},
+    {k:"Negative-quality guidance", ms:2856,
+     s:"Two predictions are made at every step, one on the positive prompt and one on a fixed negative quality prompt, and classifier free guidance pushes the result away from the second."},
+    {k:"Decoding", ms:2312,
+     s:"After the last step the latent is decoded into the restored image."},
+    {k:"The scale behind it", ms:3672,
+     s:"None of it is free. The result rests on a 20 million image dataset with text annotations, a deliberate helping of negative quality samples, and ten days on 64 GPUs."}
+  ];
+
+  var fig = document.getElementById('fig');
+  var groups = [].slice.call(fig.querySelectorAll('[data-s]'));
+  var draws = [].slice.call(fig.querySelectorAll('[data-draw]'));
+  var ticksEl = document.getElementById('ticks');
+  var capNum = document.getElementById('capNum');
+  var capKey = document.getElementById('capKey');
+  var capSay = document.getElementById('capSay');
+  var btn = document.getElementById('toggle');
+  var btnLabel = document.getElementById('toggleLabel');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  var ICON_PAUSE = '<rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/>';
+  var ICON_PLAY  = '<path d="M0 0 L10 6 L0 12 Z"/>';
+
+  draws.forEach(function(el){
+    var L = 0;
+    try { L = el.getTotalLength(); } catch(e) { L = 0; }
+    el.dataset.len = L;
+    if (L) { el.style.strokeDasharray = L + ' ' + L; el.style.strokeDashoffset = L; }
+  });
+
+  var ticks = STEPS.map(function(){
+    var t = document.createElement('div');
+    t.className = 'tick';
+    t.appendChild(document.createElement('i'));
+    ticksEl.appendChild(t);
+    return t;
+  });
+
+  var idx = 0, timer = null, playing = false, resetting = false;
+
+  function paint(i, animateTick){
+    groups.forEach(function(g){
+      var on = Number(g.dataset.s) <= i + 1;
+      var d = Number(g.dataset.d || 0) * 82;
+      g.style.transitionDelay = on ? d + 'ms' : '0ms';
+      g.classList.toggle('on', on);
+    });
+    draws.forEach(function(el){
+      var g = el.closest('[data-s]');
+      var on = g && Number(g.dataset.s) <= i + 1;
+      var d = Number((g && g.dataset.d) || 0) * 82 + 54;
+      el.style.transitionDelay = on ? d + 'ms' : '0ms';
+      el.style.strokeDashoffset = on ? 0 : (el.dataset.len || 0);
+    });
+    capNum.textContent = (i + 1 < 10 ? '0' : '') + (i + 1);
+    capKey.textContent = STEPS[i].k;
+    capSay.innerHTML = STEPS[i].s;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j < i ? ' done' : ''); });
+    if (animateTick) {
+      ticks[i].style.setProperty('--dur', STEPS[i].ms + 'ms');
+      void ticks[i].offsetWidth;
+      ticks[i].classList.add('live');
+    } else {
+      ticks[i].classList.add('done');
+    }
+  }
+
+  function schedule(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      if (idx >= STEPS.length - 1) { restart(); }
+      else { idx += 1; paint(idx, true); schedule(); }
+    }, STEPS[idx].ms);
+  }
+
+  function restart(){
+    resetting = true;
+    document.body.classList.add('resetting');
+    groups.forEach(function(g){ g.classList.remove('on'); g.style.transitionDelay = '0ms'; });
+    draws.forEach(function(el){ el.style.transitionDelay = '0ms'; el.style.strokeDashoffset = el.dataset.len || 0; });
+    ticks.forEach(function(t){ t.className = 'tick'; });
+    timer = setTimeout(function(){
+      document.body.classList.remove('resetting');
+      resetting = false;
+      idx = 0; paint(0, true); schedule();
+    }, 320);
+  }
+
+  function play(){
+    playing = true;
+    btnLabel.textContent = 'Pause';
+    btn.setAttribute('aria-label', 'Pause the animation');
+    btn.querySelector('svg').innerHTML = ICON_PAUSE;
+    paint(idx, true);
+    schedule();
+  }
+  function pause(){
+    playing = false;
+    clearTimeout(timer);
+    document.body.classList.remove('resetting');
+    if (resetting) { resetting = false; idx = 0; paint(0, false); }
+    btnLabel.textContent = 'Play';
+    btn.setAttribute('aria-label', 'Play the animation');
+    btn.querySelector('svg').innerHTML = ICON_PLAY;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j <= idx ? ' done' : ''); });
+  }
+  function step(delta){
+    if (playing) pause();
+    idx = Math.min(STEPS.length - 1, Math.max(0, idx + delta));
+    paint(idx, false);
+  }
+
+  btn.addEventListener('click', function(){ playing ? pause() : play(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    else if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playing ? pause() : play(); }
+  });
+
+  if (reduce.matches) { idx = STEPS.length - 1; paint(idx, false); pause(); }
+  else { paint(0, false); play(); }
+})();
+</script>
+
+
+<script>
+/* ---- embed bridge: report height to the host page, accept play/pause ---- */
+(function(){
+  if (window.parent === window) return;
+  var last = 0;
+  function post(){
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (h && Math.abs(h - last) > 1) { last = h; parent.postMessage({type:'shm-anim-height', h:h}, '*'); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(post).observe(document.documentElement);
+  window.addEventListener('load', post);
+  window.addEventListener('resize', post);
+  document.fonts && document.fonts.ready && document.fonts.ready.then(post);
+  post();
+
+  function playing(){
+    var label = document.getElementById('toggleLabel');
+    return !!label && (label.textContent || '').trim() === 'Pause';
+  }
+  function announce(){ parent.postMessage({type:'shm-anim-state', playing:playing()}, '*'); }
+
+  window.addEventListener('message', function(e){
+    var d = e.data || {};
+    if (d.type !== 'shm-anim-cmd') return;
+    var btn = document.getElementById('toggle');
+    if (!btn) return;
+    if (d.cmd === 'prev' || d.cmd === 'next') {
+      /* the figure already steps on ArrowLeft/ArrowRight — hand it one */
+      document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: d.cmd === 'next' ? 'ArrowRight' : 'ArrowLeft', bubbles: true
+      }));
+      announce();
+      return;
+    }
+    if (d.cmd === 'toggle') btn.click();
+    if (d.cmd === 'pause' && playing()) btn.click();
+    if (d.cmd === 'play' && !playing()) btn.click();
+    announce();
+  });
+
+  var lbl = document.getElementById('toggleLabel');
+  if (lbl && window.MutationObserver) new MutationObserver(announce).observe(lbl, {childList:true, characterData:true, subtree:true});
+  window.addEventListener('load', announce);
+  announce();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>UniCon Information Flow</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,600&display=swap">
+<style>
+:root{
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+
+  --bg:#F1F3F7;
+  --plate:#FFFFFF;
+  --ink:#141B26;
+  --muted:#5D687A;
+  --hair:#DCE1EA;
+  --plate-hair:#E4E8EF;
+  --grid:rgba(20,27,38,.055);
+  --shadow:0 1px 2px rgba(20,27,38,.05),0 12px 34px rgba(20,27,38,.09);
+
+  --accent:#1E6DCC;
+  --pink:#BE2F88;
+  --green:#28794A;
+  --wire:#39434F;
+
+  --chip-ink:#141C28;
+  --c-blue-f:#D4E6F9;    --c-blue-s:#78A9DF;
+  --c-green-f:#D6EBDA;   --c-green-s:#6DB27E;
+  --c-pink-f:#F8D9E8;    --c-pink-s:#DD9BC2;
+  --c-tan-f:#FBE4CE;     --c-tan-s:#E4AD78;
+  --c-salmon-f:#F8D3C6;  --c-salmon-s:#DE9078;
+  --c-magenta-f:#F9D6EF; --c-magenta-s:#D98BC9;
+  --box-f:#F0F2F6;       --box-s:#C6CCD7;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+    --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+    --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+    --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+  --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+  --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+  --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1720px;margin:0 auto;padding-inline:16px;padding-block:clamp(18px,3vw,34px);display:flex;flex-direction:column;gap:clamp(14px,2vw,20px)}
+
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.head .who{display:flex;flex-direction:column;gap:5px;min-width:0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-size:clamp(20px,2.6vw,27px);font-weight:600;letter-spacing:-.015em;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:66ch;font-size:14px}
+.btn{flex:none;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--plate);border:1px solid var(--hair);border-radius:999px;padding:9px 15px;cursor:pointer;transition:border-color .2s,color .2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn svg{width:11px;height:11px;fill:currentColor}
+
+.plate{background:var(--plate);border:1px solid var(--plate-hair);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.stage{overflow-x:auto;overflow-y:hidden}
+.stage svg{display:block;width:100%;min-width:1180px;height:auto}
+
+.rail{display:flex;flex-direction:column;gap:11px}
+.ticks{display:flex;gap:5px}
+.tick{flex:1;height:3px;border-radius:2px;background:var(--hair);overflow:hidden}
+.tick i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px}
+.tick.done i{width:100%}
+.tick.live i{width:100%;transition:width linear var(--dur,3s)}
+.cap{display:flex;gap:clamp(12px,3vw,28px);align-items:baseline;flex-wrap:wrap;min-height:46px}
+.cap .idx{font-family:var(--mono);font-size:13px;letter-spacing:.1em;color:var(--muted);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.cap .idx b{color:var(--ink);font-weight:500}
+.cap .say{margin:0;font-size:clamp(15px,1.6vw,17px);max-width:88ch;color:var(--ink)}
+.cap .say em{font-family:var(--serif);font-style:italic}
+
+svg text{font-family:var(--sans);font-size:17.4px}
+.t{fill:var(--chip-ink)}
+.lbl{fill:var(--ink);font-weight:500}
+.mini{fill:var(--muted);font-size:14.5px}
+.mv{font-family:var(--serif);font-style:italic}
+.mvb{font-family:var(--serif);font-style:italic;font-weight:600}
+.mv:not([font-size]),.mvb:not([font-size]){font-size:1.13em}
+
+.rv{opacity:0;transition:opacity .34s ease}
+.rv.pop{transform-box:fill-box;transform-origin:center;transform:scale(.94);transition:opacity .34s ease,transform .34s cubic-bezier(.2,.8,.25,1)}
+.rv.on{opacity:1;transform:none}
+.wire{fill:none;stroke:var(--wire);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke-dashoffset .38s cubic-bezier(.3,.7,.3,1)}
+.wire.thin{stroke-width:1.4;opacity:.7}
+.gdash{fill:none;stroke:var(--green);stroke-width:2;stroke-dasharray:9 7;stroke-linecap:round;stroke-linejoin:round}
+.bdash{fill:none;stroke:var(--accent);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.pdash{fill:none;stroke:var(--pink);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.gradbox{fill:none;stroke:var(--pink);stroke-width:2;stroke-dasharray:10 7;opacity:.85}
+.on .gdash,.on .bdash,.on .pdash,.on .gradbox{animation:march 1.05s linear infinite}
+@keyframes march{to{stroke-dashoffset:-17}}
+.frame{stroke-width:1.5}
+.chip{fill:var(--plate)}
+
+.resetting *{transition-delay:0s!important;transition-duration:.24s!important}
+@media (prefers-reduced-motion:reduce){
+  .rv{transition:none}
+  .on .gdash,.on .bdash,.on .pdash{animation:none}
+  .flow{display:none}
+  .tick.live i{transition:none}
+}
+@media (max-width:640px){.cap{min-height:64px}}
+</style>
+
+
+<style id="shm-embed">
+/* ---- embedded in the Super Hyper Master paper pages ---- */
+html,body{background:transparent}
+/* the host page supplies the heading and the play control */
+.head{display:none}
+/* narrow screens: fit the whole figure instead of forcing a sideways scroll */
+@media (max-width:1000px){
+  .stage svg{min-width:0}
+  .cap{min-height:0}
+  .cap .say{font-size:14px}
+}
+.wrap{max-width:none;padding-inline:0;padding-block:0;gap:14px}
+.plate{border-radius:12px}
+.head{align-items:flex-start}
+@media (max-width:700px){ .head .btn{align-self:flex-start} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="who">
+      <span class="eyebrow">Control adapters for diffusion models</span>
+      <h1>UniCon Information Flow</h1>
+      <p class="sub">Send the information one way, from the diffusion model into the adapter, and let the adapter produce the output. The diffusion model then never needs a backward pass.</p>
+    </div>
+    <button class="btn" id="toggle" aria-label="Pause the animation">
+      <svg viewBox="0 0 10 12" aria-hidden="true"><rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/></svg>
+      <span id="toggleLabel">Pause</span>
+    </button>
+  </header>
+
+  <div class="plate">
+    <div class="stage">
+<svg id="fig" viewBox="0 0 1520 800" role="img" aria-label="Comparison of ControlNet and UniCon. In ControlNet the adapter writes residuals back into the frozen diffusion blocks, so gradients must pass through them. In UniCon information flows only from the diffusion model into the adapter, which produces the output itself, so only the adapter needs gradients.">
+<defs>
+  <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="1.2" r="1.1" fill="var(--grid)"/></pattern>
+  <marker id="mW" markerWidth="11" markerHeight="8" refX="10.2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L11,4 L0,8 Z" fill="var(--wire)"/></marker>
+  <marker id="mG" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--green)"/></marker>
+  <g id="snow" stroke="#4E9AD9" stroke-width="1.7" stroke-linecap="round" fill="none">
+    <path d="M0,-8 V8 M-7,-4 L7,4 M-7,4 L7,-4"/>
+    <path d="M-2.6,-5.6 L0,-8 L2.6,-5.6 M-2.6,5.6 L0,8 L2.6,5.6"/>
+  </g>
+  <g id="flame">
+    <path d="M0,-9 C4.6,-4.2 7,-1.4 7,2 C7,6 3.9,9 0,9 C-3.9,9 -7,6 -7,2 C-7,-1.8 -3.4,-3.6 -1.4,-7 C-1,-7.7 -0.5,-8.4 0,-9 Z" fill="#E8843C"/>
+    <path d="M0,-1.6 C2.2,0.6 3.1,2 3.1,3.6 C3.1,5.5 1.7,6.8 0,6.8 C-1.7,6.8 -3.1,5.5 -3.1,3.6 C-3.1,2.1 -1.6,1.1 -0.7,-0.4 C-0.5,-0.8 -0.2,-1.2 0,-1.6 Z" fill="#F7D046"/>
+  </g>
+</defs>
+
+<rect width="1520" height="800" fill="var(--plate)"/>
+<rect width="1520" height="800" fill="url(#dots)"/>
+
+<!-- legend -->
+<g class="rv" data-s="1" data-d="0">
+  <g transform="translate(556,44)"><use href="#flame"/></g>
+  <text class="mini" x="572" y="50">Trainable</text>
+  <g transform="translate(688,44)"><use href="#snow"/></g>
+  <text class="mini" x="704" y="50">Fixed</text>
+</g>
+<g class="rv" data-s="4" data-d="0">
+  <rect x="790" y="36" width="32" height="17" rx="5" class="gradbox"/>
+  <text class="mini" x="830" y="50">Requires gradient</text>
+</g>
+
+<!-- panels -->
+<g class="rv" data-s="1">
+  <text x="40" y="84" font-size="18" font-weight="600" fill="var(--ink)">ControlNet &#183; information flows both ways</text>
+  <rect x="40" y="96" width="680" height="504" rx="14" fill="var(--box-f)" stroke="var(--box-s)" class="frame"/>
+</g>
+<g class="rv" data-s="5">
+  <text x="800" y="84" font-size="18" font-weight="600" fill="var(--green)">UniCon &#183; information flows one way</text>
+  <rect x="800" y="96" width="680" height="504" rx="14" fill="var(--box-f)" stroke="var(--box-s)" class="frame"/>
+</g>
+<g class="rv pop" data-s="1" data-d="1"><rect x="130" y="180" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="210" y="208" text-anchor="middle" font-size="14">Diff. Block</text><rect x="130" y="244" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="210" y="272" text-anchor="middle" font-size="14">Diff. Block</text><rect x="130" y="308" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="210" y="336" text-anchor="middle" font-size="14">Diff. Block</text><rect x="130" y="372" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="210" y="400" text-anchor="middle" font-size="14">Diff. Block</text></g>
+<g class="rv" data-s="1" data-d="2"><text class="lbl" x="210" y="150" text-anchor="middle" font-size="15"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">t</tspan></text><path class="wire" data-draw d="M210,160 V176" marker-end="url(#mW)"/><path class="wire" data-draw d="M210,224 V240" marker-end="url(#mW)"/><path class="wire" data-draw d="M210,288 V304" marker-end="url(#mW)"/><path class="wire" data-draw d="M210,352 V368" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="2" data-d="1"><rect x="470" y="180" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="550" y="208" text-anchor="middle" font-size="14">Trainable Copy</text><rect x="470" y="244" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="550" y="272" text-anchor="middle" font-size="14">Trainable Copy</text><rect x="470" y="308" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="550" y="336" text-anchor="middle" font-size="14">Trainable Copy</text><rect x="470" y="372" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="550" y="400" text-anchor="middle" font-size="14">Trainable Copy</text></g>
+<g class="rv" data-s="2" data-d="2"><text class="lbl" x="550" y="150" text-anchor="middle" font-size="15"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">t</tspan><tspan dy="-4"> + </tspan><tspan class="mv">c</tspan></text><path class="wire" data-draw d="M550,160 V176" marker-end="url(#mW)"/><path class="wire" data-draw d="M550,224 V240" marker-end="url(#mW)"/><path class="wire" data-draw d="M550,288 V304" marker-end="url(#mW)"/><path class="wire" data-draw d="M550,352 V368" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="3" data-d="0"><path class="wire" data-draw d="M466,202 H298" marker-end="url(#mW)"/><path class="wire" data-draw d="M466,266 H298" marker-end="url(#mW)"/><path class="wire" data-draw d="M466,330 H298" marker-end="url(#mW)"/><path class="wire" data-draw d="M466,394 H298" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="3" data-d="1"><path class="wire" data-draw d="M210,416 V444" marker-end="url(#mW)"/><text class="lbl" x="210" y="464" text-anchor="middle" font-size="15"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">t&#8722;1</tspan></text></g>
+<g class="rv" data-s="3" data-d="2"><text class="mini" x="380" y="492" text-anchor="middle">the adapter writes residuals back into the frozen blocks</text></g>
+<g class="rv" data-s="4" data-d="0"><rect x="120" y="170" width="180" height="256" rx="12" class="gradbox"/><rect x="460" y="170" width="180" height="256" rx="12" class="gradbox"/><text class="mini" x="380" y="452" text-anchor="middle" fill="var(--pink)">requires gradient</text></g>
+<g class="rv" data-s="4" data-d="1"><text class="mini" x="380" y="534" text-anchor="middle">the backward pass has to run through the diffusion blocks as well</text><text class="mini" x="380" y="556" text-anchor="middle">so their gradients are computed and stored too</text></g>
+<g class="rv pop" data-s="5" data-d="1"><rect x="890" y="180" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="970" y="208" text-anchor="middle" font-size="14">Diff. Block</text><rect x="890" y="244" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="970" y="272" text-anchor="middle" font-size="14">Diff. Block</text><rect x="890" y="308" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="970" y="336" text-anchor="middle" font-size="14">Diff. Block</text><rect x="890" y="372" width="160" height="44" rx="7" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/><text class="t" x="970" y="400" text-anchor="middle" font-size="14">Diff. Block</text></g>
+<g class="rv" data-s="5" data-d="2"><text class="lbl" x="970" y="150" text-anchor="middle" font-size="15"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">t</tspan></text><path class="wire" data-draw d="M970,160 V176" marker-end="url(#mW)"/><path class="wire" data-draw d="M970,224 V240" marker-end="url(#mW)"/><path class="wire" data-draw d="M970,288 V304" marker-end="url(#mW)"/><path class="wire" data-draw d="M970,352 V368" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="6" data-d="1"><rect x="1230" y="180" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="1310" y="208" text-anchor="middle" font-size="14">Trainable Copy</text><rect x="1230" y="244" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="1310" y="272" text-anchor="middle" font-size="14">Trainable Copy</text><rect x="1230" y="308" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="1310" y="336" text-anchor="middle" font-size="14">Trainable Copy</text><rect x="1230" y="372" width="160" height="44" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/><text class="t" x="1310" y="400" text-anchor="middle" font-size="14">Trainable Copy</text></g>
+<g class="rv" data-s="6" data-d="2"><text class="lbl" x="1310" y="150" text-anchor="middle" font-size="15"><tspan class="mv">c</tspan></text><path class="wire" data-draw d="M1310,160 V176" marker-end="url(#mW)"/><path class="wire" data-draw d="M1310,224 V240" marker-end="url(#mW)"/><path class="wire" data-draw d="M1310,288 V304" marker-end="url(#mW)"/><path class="wire" data-draw d="M1310,352 V368" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="7" data-d="0"><path id="pFlow0" class="gdash" d="M1054,202 H1222" marker-end="url(#mG)"/><path id="pFlow1" class="gdash" d="M1054,266 H1222" marker-end="url(#mG)"/><path id="pFlow2" class="gdash" d="M1054,330 H1222" marker-end="url(#mG)"/><path id="pFlow3" class="gdash" d="M1054,394 H1222" marker-end="url(#mG)"/></g>
+<g class="rv" data-s="7" data-d="1"><text class="mini" x="1145" y="190" text-anchor="middle" fill="var(--green)">ZeroFT</text></g>
+<g class="rv" data-s="7" data-d="1"><path class="wire" data-draw d="M1310,416 V444" marker-end="url(#mW)"/><text class="lbl" x="1310" y="464" text-anchor="middle" font-size="15"><tspan class="mv">z</tspan><tspan font-size="11" dy="4">t&#8722;1</tspan></text></g>
+<g class="rv" data-s="7" data-d="2"><text class="mini" x="1140" y="492" text-anchor="middle">the adapter reads the features and writes the output itself</text></g>
+<g class="rv" data-s="8" data-d="0"><rect x="1220" y="170" width="180" height="256" rx="12" class="gradbox"/><text class="mini" x="1206" y="452" text-anchor="end" fill="var(--pink)">requires gradient</text></g>
+<g class="rv" data-s="8" data-d="1"><text class="mini" x="1140" y="534" text-anchor="middle">the diffusion model only ever runs forward</text><text class="mini" x="1140" y="556" text-anchor="middle">so nothing is kept for a backward pass through it</text></g>
+
+<!-- ===== step 9 : the ZeroFT connector ===== -->
+<g class="rv" data-s="9">
+  <path d="M40,650 H720" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="40" y="682" font-size="15" font-weight="600" fill="var(--ink)">ZeroFT Connector</text>
+  <text class="mini" x="56" y="706"><tspan class="mv">X</tspan><tspan font-size="11" dy="4">f</tspan></text>
+  <path class="wire" data-draw d="M82,700 H440"/>
+  <circle cx="252" cy="700" r="3.6" fill="var(--wire)"/>
+  <circle cx="440" cy="700" r="3.6" fill="var(--wire)"/>
+  <path class="wire" data-draw d="M252,700 V722" marker-end="url(#mW)"/>
+  <path class="wire" data-draw d="M440,700 V722" marker-end="url(#mW)"/>
+  <text class="mini" x="56" y="746"><tspan class="mv">X</tspan><tspan font-size="11" dy="4">c</tspan></text>
+  <path class="wire" data-draw d="M80,740 H94" marker-end="url(#mW)"/>
+  <rect x="98" y="722" width="124" height="36" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/>
+  <text class="t" x="160" y="746.3" text-anchor="middle" font-size="11.5">ZeroConv / MLP</text>
+  <path class="wire" data-draw d="M222,740 H236" marker-end="url(#mW)"/>
+  <circle cx="252" cy="740" r="14" fill="var(--plate)" stroke="var(--wire)" stroke-width="1.6"/>
+  <path d="M246.5,734.5 L257.5,745.5 M257.5,734.5 L246.5,745.5" stroke="var(--wire)" stroke-width="1.6" stroke-linecap="round"/>
+  <path class="wire" data-draw d="M266,740 H282" marker-end="url(#mW)"/>
+  <rect x="286" y="722" width="124" height="36" rx="7" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/>
+  <text class="t" x="348" y="746.3" text-anchor="middle" font-size="11.5">ZeroConv / MLP</text>
+  <path class="wire" data-draw d="M410,740 H424" marker-end="url(#mW)"/>
+  <circle cx="440" cy="740" r="14" fill="var(--plate)" stroke="var(--wire)" stroke-width="1.6"/>
+  <path d="M433,740 H447 M440,733 V747" stroke="var(--wire)" stroke-width="1.6" stroke-linecap="round"/>
+  <path class="wire" data-draw d="M454,740 H468" marker-end="url(#mW)"/>
+  <text class="mini" x="476" y="746"><tspan class="mv">X</tspan><tspan font-size="11" dy="4">fo</tspan></text>
+  <text class="mini" x="56" y="790">Both layers start at zero, so the connector begins as the identity and grows its influence during training.</text>
+</g>
+
+<!-- ===== step 10 : what it buys ===== -->
+<g class="rv" data-s="10">
+  <path d="M800,650 H1480" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="800" y="682" font-size="15" font-weight="600" fill="var(--ink)">What the one-way design buys</text>
+  <text class="mini" x="800" y="718">GPU memory</text>
+  <text x="1010" y="718" font-size="17" font-weight="500" fill="var(--ink)">one third less</text>
+  <text class="mini" x="800" y="750">Training speed</text>
+  <text x="1010" y="750" font-size="17" font-weight="500" fill="var(--ink)">2.3&#215; faster</text>
+  <text class="mini" x="800" y="782">Adapter capacity</text>
+  <text x="1010" y="782" font-size="17" font-weight="500" fill="var(--ink)">up to twice a ControlNet, same budget</text>
+</g>
+
+<!-- ===== travelling pulses on the one-way links ===== -->
+<g class="rv flow" data-s="6">
+  <circle r="4.5" fill="var(--green)"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#pFlow0"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--green)"><animateMotion dur="1.5s" begin="0.25s" repeatCount="indefinite"><mpath href="#pFlow1"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--green)"><animateMotion dur="1.5s" begin="0.5s" repeatCount="indefinite"><mpath href="#pFlow2"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--green)"><animateMotion dur="1.5s" begin="0.75s" repeatCount="indefinite"><mpath href="#pFlow3"/></animateMotion></circle>
+</g>
+</svg>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <div class="cap">
+      <span class="idx"><b id="capNum">01</b> / 10 &nbsp;&#183;&nbsp; <span id="capKey">The diffusion model</span></span>
+      <p class="say" id="capSay" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STEPS = [
+    {k:"The diffusion model", ms:2312,
+     s:"Start with a pretrained diffusion model: a stack of blocks that takes the noisy latent and predicts the next one. Its weights are frozen."},
+    {k:"The trainable copy", ms:2448,
+     s:"A control adapter is a trainable copy of that stack, fed with the noisy latent and the condition, whether that is a depth map, an edge map or a low quality image."},
+    {k:"Residuals go back in", ms:2720,
+     s:"ControlNet adds the adapter's residuals into the frozen blocks, so the output still leaves through the diffusion model rather than the adapter."},
+    {k:"The hidden cost", ms:3128,
+     s:"Because the adapter only reaches the output through the frozen blocks, the backward pass has to run through them too. Their gradients get computed and stored, roughly 16GB on top of the adapter's own 18GB in the authors' setup."},
+    {k:"Turn the flow around", ms:2448,
+     s:"UniCon keeps the same frozen stack, and the same trainable copy beside it, but changes which way the information travels."},
+    {k:"One way only", ms:2720,
+     s:"The intermediate features of the diffusion model are read out and passed into the adapter through zero initialized connectors. Nothing is written back."},
+    {k:"The adapter speaks", ms:2856,
+     s:"The output now leaves the adapter itself. The whole path is one direction: latent into the diffusion model, features into the adapter, prediction out."},
+    {k:"What changes", ms:3128,
+     s:"Only the adapter needs gradients now. The diffusion model runs forward and is never touched, so its generative ability cannot be forgotten either."},
+    {k:"ZeroFT connector", ms:2720,
+     s:"The connector is more than an addition. A scale and a shift, both from layers initialized at zero, plus a shortcut, so training starts from the untouched model and grows from there."},
+    {k:"The payoff", ms:3672,
+     s:"A third less memory, training 2.3 times faster, and room for an adapter twice the size of a ControlNet at the same cost. The design also drops straight onto a transformer backbone, where encoder and decoder cannot be cleanly separated."}
+  ];
+
+  var fig = document.getElementById('fig');
+  var groups = [].slice.call(fig.querySelectorAll('[data-s]'));
+  var draws = [].slice.call(fig.querySelectorAll('[data-draw]'));
+  var ticksEl = document.getElementById('ticks');
+  var capNum = document.getElementById('capNum');
+  var capKey = document.getElementById('capKey');
+  var capSay = document.getElementById('capSay');
+  var btn = document.getElementById('toggle');
+  var btnLabel = document.getElementById('toggleLabel');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  var ICON_PAUSE = '<rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/>';
+  var ICON_PLAY  = '<path d="M0 0 L10 6 L0 12 Z"/>';
+
+  draws.forEach(function(el){
+    var L = 0;
+    try { L = el.getTotalLength(); } catch(e) { L = 0; }
+    el.dataset.len = L;
+    if (L) { el.style.strokeDasharray = L + ' ' + L; el.style.strokeDashoffset = L; }
+  });
+
+  var ticks = STEPS.map(function(){
+    var t = document.createElement('div');
+    t.className = 'tick';
+    t.appendChild(document.createElement('i'));
+    ticksEl.appendChild(t);
+    return t;
+  });
+
+  var idx = 0, timer = null, playing = false, resetting = false;
+
+  function paint(i, animateTick){
+    groups.forEach(function(g){
+      var on = Number(g.dataset.s) <= i + 1;
+      var d = Number(g.dataset.d || 0) * 82;
+      g.style.transitionDelay = on ? d + 'ms' : '0ms';
+      g.classList.toggle('on', on);
+    });
+    draws.forEach(function(el){
+      var g = el.closest('[data-s]');
+      var on = g && Number(g.dataset.s) <= i + 1;
+      var d = Number((g && g.dataset.d) || 0) * 82 + 54;
+      el.style.transitionDelay = on ? d + 'ms' : '0ms';
+      el.style.strokeDashoffset = on ? 0 : (el.dataset.len || 0);
+    });
+    capNum.textContent = (i + 1 < 10 ? '0' : '') + (i + 1);
+    capKey.textContent = STEPS[i].k;
+    capSay.innerHTML = STEPS[i].s;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j < i ? ' done' : ''); });
+    if (animateTick) {
+      ticks[i].style.setProperty('--dur', STEPS[i].ms + 'ms');
+      void ticks[i].offsetWidth;
+      ticks[i].classList.add('live');
+    } else {
+      ticks[i].classList.add('done');
+    }
+  }
+
+  function schedule(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      if (idx >= STEPS.length - 1) { restart(); }
+      else { idx += 1; paint(idx, true); schedule(); }
+    }, STEPS[idx].ms);
+  }
+
+  function restart(){
+    resetting = true;
+    document.body.classList.add('resetting');
+    groups.forEach(function(g){ g.classList.remove('on'); g.style.transitionDelay = '0ms'; });
+    draws.forEach(function(el){ el.style.transitionDelay = '0ms'; el.style.strokeDashoffset = el.dataset.len || 0; });
+    ticks.forEach(function(t){ t.className = 'tick'; });
+    timer = setTimeout(function(){
+      document.body.classList.remove('resetting');
+      resetting = false;
+      idx = 0; paint(0, true); schedule();
+    }, 320);
+  }
+
+  function play(){
+    playing = true;
+    btnLabel.textContent = 'Pause';
+    btn.setAttribute('aria-label', 'Pause the animation');
+    btn.querySelector('svg').innerHTML = ICON_PAUSE;
+    paint(idx, true);
+    schedule();
+  }
+  function pause(){
+    playing = false;
+    clearTimeout(timer);
+    document.body.classList.remove('resetting');
+    if (resetting) { resetting = false; idx = 0; paint(0, false); }
+    btnLabel.textContent = 'Play';
+    btn.setAttribute('aria-label', 'Play the animation');
+    btn.querySelector('svg').innerHTML = ICON_PLAY;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j <= idx ? ' done' : ''); });
+  }
+  function step(delta){
+    if (playing) pause();
+    idx = Math.min(STEPS.length - 1, Math.max(0, idx + delta));
+    paint(idx, false);
+  }
+
+  btn.addEventListener('click', function(){ playing ? pause() : play(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    else if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playing ? pause() : play(); }
+  });
+
+  if (reduce.matches) { idx = STEPS.length - 1; paint(idx, false); pause(); }
+  else { paint(0, false); play(); }
+})();
+</script>
+
+
+<script>
+/* ---- embed bridge: report height to the host page, accept play/pause ---- */
+(function(){
+  if (window.parent === window) return;
+  var last = 0;
+  function post(){
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (h && Math.abs(h - last) > 1) { last = h; parent.postMessage({type:'shm-anim-height', h:h}, '*'); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(post).observe(document.documentElement);
+  window.addEventListener('load', post);
+  window.addEventListener('resize', post);
+  document.fonts && document.fonts.ready && document.fonts.ready.then(post);
+  post();
+
+  function playing(){
+    var label = document.getElementById('toggleLabel');
+    return !!label && (label.textContent || '').trim() === 'Pause';
+  }
+  function announce(){ parent.postMessage({type:'shm-anim-state', playing:playing()}, '*'); }
+
+  window.addEventListener('message', function(e){
+    var d = e.data || {};
+    if (d.type !== 'shm-anim-cmd') return;
+    var btn = document.getElementById('toggle');
+    if (!btn) return;
+    if (d.cmd === 'prev' || d.cmd === 'next') {
+      /* the figure already steps on ArrowLeft/ArrowRight — hand it one */
+      document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: d.cmd === 'next' ? 'ArrowRight' : 'ArrowLeft', bubbles: true
+      }));
+      announce();
+      return;
+    }
+    if (d.cmd === 'toggle') btn.click();
+    if (d.cmd === 'pause' && playing()) btn.click();
+    if (d.cmd === 'play' && !playing()) btn.click();
+    announce();
+  });
+
+  var lbl = document.getElementById('toggleLabel');
+  if (lbl && window.MutationObserver) new MutationObserver(announce).observe(lbl, {childList:true, characterData:true, subtree:true});
+  window.addEventListener('load', announce);
+  announce();
+})();
+</script>
+</body>
+</html>

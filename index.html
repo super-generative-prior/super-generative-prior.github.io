@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Super Hyper Master — The Evolution of Generative Restoration</title>
+<meta name="description" content="SUPIR · UniCon · HYPIR · HYPI2VR · HYPVR · MASTIR — a six-paper line of work on generative image and video restoration.">
+<meta property="og:title" content="Super Hyper Master">
+<meta property="og:description" content="The Evolution of Generative Restoration — SUPIR, UniCon, HYPIR, HYPI2VR, HYPVR, MASTIR.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-era="none">
+
+<div class="glow" aria-hidden="true"></div>
+
+<!-- ============================ HERO ============================ -->
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="hero-kicker reveal" style="--d:0ms">Six papers · one line of work</p>
+
+    <h1 class="hero-title">
+      <span class="hero-word reveal" data-era="super" style="--d:60ms">Super<i>.</i></span>
+      <span class="hero-word reveal" data-era="hyper" style="--d:150ms">Hyper<i>.</i></span>
+      <span class="hero-word reveal" data-era="master" style="--d:240ms">Master<i>.</i></span>
+    </h1>
+
+    <p class="hero-sub reveal" style="--d:340ms">The Evolution of Generative Restoration</p>
+
+    <p class="hero-seq reveal" style="--d:420ms">
+      <span>SUPIR</span><em>·</em><span>UniCon</span><em>·</em><span>HYPIR</span><em>·</em><span>HYPI2VR</span><em>·</em><span>HYPVR</span><em>·</em><span>MASTIR</span>
+    </p>
+
+    <div class="logos reveal" id="heroLogos" style="--d:500ms" hidden></div>
+  </div>
+</header>
+
+<!-- ========================== TIMELINE ========================== -->
+<main>
+<section class="timeline-section reveal" style="--d:520ms" aria-label="Timeline">
+  <div class="timeline-scroll">
+    <div class="timeline" id="timeline">
+      <div class="eras" id="eras"></div>
+      <div class="track" aria-hidden="true">
+        <span class="track-line"></span>
+        <span class="track-fill" id="trackFill"></span>
+      </div>
+      <div class="nodes" id="nodes" role="tablist" aria-label="Papers"></div>
+      <div class="bubble" id="bubble" role="presentation" aria-hidden="true">
+        <span class="bubble-arrow"></span>
+        <div class="bubble-in">
+          <p class="bubble-meta"><b id="bubName"></b><span id="bubVenue"></span></p>
+          <p class="bubble-title" id="bubTitle"></p>
+          <p class="bubble-text" id="bubText"></p>
+          <p class="bubble-cta">Read the full story →</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="timeline-hint" id="hint">Hover to preview · click for the full story · <kbd>←</kbd> <kbd>→</kbd> to move</p>
+</section>
+
+<!-- ========================== DETAIL =========================== -->
+<section class="stage" id="stage" aria-live="polite">
+
+  <!-- Overview (default state) -->
+  <div class="panel overview is-on" id="overview">
+    <div class="ov-grid" id="ovGrid"></div>
+    <p class="ov-foot">Three phases of one line of work — from <b>scaling the prior</b>, to <b>making it fast</b>, to <b>making it general</b>.</p>
+  </div>
+
+  <!-- Paper detail -->
+  <article class="panel detail" id="detail" role="tabpanel" tabindex="-1">
+    <button class="back" id="back" type="button"><span>←</span> Overview</button>
+
+    <header class="d-head">
+      <p class="d-tags">
+        <span class="tag tag-era" id="dEra"></span>
+        <span class="tag tag-venue" id="dVenue"></span>
+        <span class="tag tag-status" id="dStatus"></span>
+      </p>
+      <h2 class="d-name" id="dName"></h2>
+      <p class="d-title" id="dTitle"></p>
+    </header>
+
+    <div class="d-body">
+      <div class="d-main">
+        <p class="d-tagline" id="dTagline"></p>
+        <p class="d-abstract" id="dAbstract"></p>
+        <ul class="d-highlights" id="dHighlights"></ul>
+        <p class="d-soon" id="dSoon" hidden></p>
+        <div class="d-step">
+          <span class="d-step-label">Step in the evolution</span>
+          <p id="dStep"></p>
+        </div>
+      </div>
+
+      <aside class="d-side">
+        <div class="d-figure" id="dFigure"><span id="dFigureLabel"></span></div>
+        <dl class="d-stats" id="dStats"></dl>
+        <div class="d-authors">
+          <span class="d-side-label">Authors</span>
+          <p id="dAuthors"></p>
+        </div>
+        <div class="d-links" id="dLinks"></div>
+      </aside>
+    </div>
+
+    <details class="cite" id="dCite">
+      <summary>BibTeX</summary>
+      <pre id="dBibtex"></pre>
+      <button class="copy" id="dCopy" type="button">Copy</button>
+    </details>
+
+    <nav class="d-nav">
+      <button type="button" class="d-nav-btn" id="prevBtn"><span class="dir">← Previous</span><span class="nm"></span></button>
+      <button type="button" class="d-nav-btn is-next" id="nextBtn"><span class="dir">Next →</span><span class="nm"></span></button>
+    </nav>
+  </article>
+</section>
+
+<!-- ======================= RELATED WORK ======================== -->
+<section class="related" id="related">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="sec-kicker">Related Work</p>
+      <h2 class="sec-title">Around the same thread</h2>
+      <p class="sec-lede">Selected work from the group and its collaborators on restoration, faces, interpretability and image quality assessment.</p>
+      <p class="sec-flag" id="relFlag" hidden>Placeholder entries — to be replaced</p>
+    </header>
+    <div class="rw-groups" id="rwGrid"></div>
+  </div>
+</section>
+</main>
+
+<!-- ========================== FOOTER =========================== -->
+<footer class="footer" id="siteFooter"></footer>
+
+<noscript>
+  <p style="padding:2rem;text-align:center">This page needs JavaScript to render the interactive timeline.</p>
+</noscript>
+
+<script src="assets/js/papers.js"></script>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/covers.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

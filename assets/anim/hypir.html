@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>HYPIR Training Pipeline</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@1,8..60,400;1,8..60,600&display=swap">
+<style>
+:root{
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+
+  --bg:#F1F3F7;
+  --plate:#FFFFFF;
+  --ink:#141B26;
+  --muted:#5D687A;
+  --hair:#DCE1EA;
+  --plate-hair:#E4E8EF;
+  --grid:rgba(20,27,38,.055);
+  --shadow:0 1px 2px rgba(20,27,38,.05),0 12px 34px rgba(20,27,38,.09);
+
+  --accent:#1E6DCC;
+  --pink:#BE2F88;
+  --green:#28794A;
+  --wire:#39434F;
+
+  --chip-ink:#141C28;
+  --c-blue-f:#D4E6F9;    --c-blue-s:#78A9DF;
+  --c-green-f:#D6EBDA;   --c-green-s:#6DB27E;
+  --c-pink-f:#F8D9E8;    --c-pink-s:#DD9BC2;
+  --c-tan-f:#FBE4CE;     --c-tan-s:#E4AD78;
+  --c-salmon-f:#F8D3C6;  --c-salmon-s:#DE9078;
+  --c-magenta-f:#F9D6EF; --c-magenta-s:#D98BC9;
+  --box-f:#F0F2F6;       --box-s:#C6CCD7;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+    --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+    --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+    --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B0E13; --plate:#141A23; --ink:#E3E9F1; --muted:#94A0B2;
+  --hair:#232B37; --plate-hair:#232B37; --grid:rgba(255,255,255,.05);
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 40px rgba(0,0,0,.45);
+  --accent:#6FADF4; --pink:#F27FC6; --green:#66C98C; --wire:#98A5B7;
+  --box-f:rgba(255,255,255,.045); --box-s:#39424F;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1720px;margin:0 auto;padding-inline:16px;padding-block:clamp(18px,3vw,34px);display:flex;flex-direction:column;gap:clamp(14px,2vw,20px)}
+
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.head .who{display:flex;flex-direction:column;gap:5px;min-width:0}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{margin:0;font-size:clamp(20px,2.6vw,27px);font-weight:600;letter-spacing:-.015em;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:66ch;font-size:14px}
+.btn{flex:none;display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--plate);border:1px solid var(--hair);border-radius:999px;padding:9px 15px;cursor:pointer;transition:border-color .2s,color .2s}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn svg{width:11px;height:11px;fill:currentColor}
+
+.plate{background:var(--plate);border:1px solid var(--plate-hair);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.stage{overflow-x:auto;overflow-y:hidden}
+.stage svg{display:block;width:100%;min-width:1180px;height:auto}
+
+.rail{display:flex;flex-direction:column;gap:11px}
+.ticks{display:flex;gap:5px}
+.tick{flex:1;height:3px;border-radius:2px;background:var(--hair);overflow:hidden}
+.tick i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px}
+.tick.done i{width:100%}
+.tick.live i{width:100%;transition:width linear var(--dur,3s)}
+.cap{display:flex;gap:clamp(12px,3vw,28px);align-items:baseline;flex-wrap:wrap;min-height:46px}
+.cap .idx{font-family:var(--mono);font-size:13px;letter-spacing:.1em;color:var(--muted);white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.cap .idx b{color:var(--ink);font-weight:500}
+.cap .say{margin:0;font-size:clamp(15px,1.6vw,17px);max-width:88ch;color:var(--ink)}
+.cap .say em{font-family:var(--serif);font-style:italic}
+
+svg text{font-family:var(--sans);font-size:17.4px}
+.t{fill:var(--chip-ink)}
+.lbl{fill:var(--ink);font-weight:500}
+.mini{fill:var(--muted);font-size:14.5px}
+.mv{font-family:var(--serif);font-style:italic}
+.mvb{font-family:var(--serif);font-style:italic;font-weight:600}
+.mv:not([font-size]),.mvb:not([font-size]){font-size:1.13em}
+
+.rv{opacity:0;transition:opacity .34s ease}
+.rv.pop{transform-box:fill-box;transform-origin:center;transform:scale(.94);transition:opacity .34s ease,transform .34s cubic-bezier(.2,.8,.25,1)}
+.rv.on{opacity:1;transform:none}
+.wire{fill:none;stroke:var(--wire);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:stroke-dashoffset .38s cubic-bezier(.3,.7,.3,1)}
+.wire.thin{stroke-width:1.4;opacity:.7}
+.gdash{fill:none;stroke:var(--green);stroke-width:2;stroke-dasharray:9 7;stroke-linecap:round;stroke-linejoin:round}
+.bdash{fill:none;stroke:var(--accent);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.pdash{fill:none;stroke:var(--pink);stroke-width:2.1;stroke-dasharray:11 8;stroke-linecap:round;stroke-linejoin:round}
+.on .gdash,.on .bdash,.on .pdash{animation:march 1.05s linear infinite}
+@keyframes march{to{stroke-dashoffset:-19}}
+.frame{stroke-width:1.5}
+.chip{fill:var(--plate)}
+
+.resetting *{transition-delay:0s!important;transition-duration:.24s!important}
+@media (prefers-reduced-motion:reduce){
+  .rv{transition:none}
+  .on .gdash,.on .bdash,.on .pdash{animation:none}
+  .flow{display:none}
+  .tick.live i{transition:none}
+}
+@media (max-width:640px){.cap{min-height:64px}}
+</style>
+
+
+<style id="shm-embed">
+/* ---- embedded in the Super Hyper Master paper pages ---- */
+html,body{background:transparent}
+/* the host page supplies the heading and the play control */
+.head{display:none}
+/* narrow screens: fit the whole figure instead of forcing a sideways scroll */
+@media (max-width:1000px){
+  .stage svg{min-width:0}
+  .cap{min-height:0}
+  .cap .say{font-size:14px}
+}
+.wrap{max-width:none;padding-inline:0;padding-block:0;gap:14px}
+.plate{border-radius:12px}
+.head{align-items:flex-start}
+@media (max-width:700px){ .head .btn{align-self:flex-start} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <div class="who">
+      <span class="eyebrow">Diffusion prior, adversarial fine-tuning</span>
+      <h1>HYPIR Training Pipeline</h1>
+      <p class="sub">A pretrained diffusion model supplies the initialization, then lightweight adversarial fine-tuning does the rest. No diffusion loss, no sampling loop, no control adapters.</p>
+    </div>
+    <button class="btn" id="toggle" aria-label="Pause the animation">
+      <svg viewBox="0 0 10 12" aria-hidden="true"><rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/></svg>
+      <span id="toggleLabel">Pause</span>
+    </button>
+  </header>
+
+  <div class="plate">
+    <div class="stage">
+<svg id="fig" viewBox="0 0 1520 800" role="img" aria-label="HYPIR pipeline: a pretrained diffusion model initializes a restoration network, the VAE encoder is fine tuned for degradation pre removal, and the assembled model is trained adversarially with reconstruction terms.">
+<defs>
+  <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7D6EC"/><stop offset="1" stop-color="#EADDC6"/></linearGradient>
+  <linearGradient id="gSea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#53829A"/><stop offset="1" stop-color="#2C5164"/></linearGradient>
+  <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="1.2" r="1.1" fill="var(--grid)"/></pattern>
+  <filter id="fLQ" x="-6%" y="-6%" width="112%" height="112%"><feGaussianBlur stdDeviation="2.2"/><feColorMatrix type="saturate" values="0.55"/></filter>
+  <clipPath id="bboxClip" clipPathUnits="objectBoundingBox"><rect x="0" y="0" width="1" height="1"/></clipPath>
+  <filter id="fNoise" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="4" seed="9"/>
+    <feComponentTransfer><feFuncA type="linear" slope="0" intercept="1"/></feComponentTransfer>
+    <feColorMatrix type="saturate" values="0.14"/>
+  </filter>
+
+  <marker id="mW" markerWidth="11" markerHeight="8" refX="10.2" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L11,4 L0,8 Z" fill="var(--wire)"/></marker>
+  <marker id="mG" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--green)"/></marker>
+  <marker id="mP" markerWidth="12" markerHeight="9" refX="11.2" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,0 L12,4.5 L0,9 Z" fill="var(--pink)"/></marker>
+
+  <g id="scene">
+    <rect width="130" height="92" fill="url(#gSky)"/>
+    <circle cx="105" cy="19" r="8" fill="#FFE1A6" opacity=".9"/>
+    <rect y="50" width="130" height="42" fill="url(#gSea)"/>
+    <path d="M0,50 L32,19 L64,50 Z" fill="#82968B"/>
+    <path d="M92,50 L114,31 L130,45 L130,50 Z" fill="#8FA298"/>
+    <path d="M0,64 L26,33 L56,64 Z" fill="#5C7166"/>
+    <rect x="12" y="49" width="6" height="8" fill="#EBCDA8"/>
+    <rect x="21" y="44" width="5" height="7" fill="#DBB791"/>
+    <rect x="29" y="51" width="7" height="9" fill="#F2DBC0"/>
+    <rect x="38" y="47" width="5" height="7" fill="#E3C3A0"/>
+    <rect x="45" y="55" width="6" height="8" fill="#EBCDA8"/>
+    <rect y="49" width="130" height="1.6" fill="#fff" opacity=".28"/>
+    <rect x="94" y="62" width="22" height="2" fill="#fff" opacity=".22"/>
+    <rect x="84" y="72" width="30" height="2" fill="#fff" opacity=".16"/>
+  </g>
+  <g id="snow" stroke="#4E9AD9" stroke-width="1.7" stroke-linecap="round" fill="none">
+    <path d="M0,-8 V8 M-7,-4 L7,4 M-7,4 L7,-4"/>
+    <path d="M-2.6,-5.6 L0,-8 L2.6,-5.6 M-2.6,5.6 L0,8 L2.6,5.6"/>
+  </g>
+  <g id="flame">
+    <path d="M0,-9 C4.6,-4.2 7,-1.4 7,2 C7,6 3.9,9 0,9 C-3.9,9 -7,6 -7,2 C-7,-1.8 -3.4,-3.6 -1.4,-7 C-1,-7.7 -0.5,-8.4 0,-9 Z" fill="#E8843C"/>
+    <path d="M0,-1.6 C2.2,0.6 3.1,2 3.1,3.6 C3.1,5.5 1.7,6.8 0,6.8 C-1.7,6.8 -3.1,5.5 -3.1,3.6 C-3.1,2.1 -1.6,1.1 -0.7,-0.4 C-0.5,-0.8 -0.2,-1.2 0,-1.6 Z" fill="#F7D046"/>
+  </g>
+</defs>
+
+<rect width="1520" height="800" fill="var(--plate)"/>
+<rect width="1520" height="800" fill="url(#dots)"/>
+
+<!-- ============ panel A : pre-trained diffusion model ============ -->
+<g class="rv" data-s="1">
+  <text x="36" y="54" font-size="18" font-weight="600" fill="var(--accent)">Pre-trained Diffusion Model</text>
+  <rect x="36" y="64" width="394" height="176" rx="14" fill="var(--box-f)" stroke="var(--box-s)" class="frame"/>
+</g>
+<g class="rv pop" data-s="1" data-d="1">
+  <path d="M56,96 L142,112 L142,168 L56,184 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="99" y="137.8" text-anchor="middle" font-size="13">VAE</text>
+  <text class="t" x="99" y="154.8" text-anchor="middle" font-size="13">Encoder</text>
+</g>
+<g class="rv pop" data-s="1" data-d="2">
+  <rect x="172" y="100" width="120" height="80" rx="8" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="232" y="137.3" text-anchor="middle" font-size="13.5">Diffusion</text>
+  <text class="t" x="232" y="155.3" text-anchor="middle" font-size="13.5">Network</text>
+</g>
+<g class="rv pop" data-s="1" data-d="3">
+  <path d="M322,112 L408,96 L408,184 L322,168 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="365" y="137.8" text-anchor="middle" font-size="13">VAE</text>
+  <text class="t" x="365" y="154.8" text-anchor="middle" font-size="13">Decoder</text>
+</g>
+<g class="rv" data-s="1" data-d="2"><path class="wire" data-draw d="M142,140 H168" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="1" data-d="3"><path class="wire" data-draw d="M292,140 H318" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="1" data-d="4">
+  <text class="mini" x="233" y="216" text-anchor="middle">already a score field over <tspan class="mv">p</tspan><tspan font-size="11" dy="4">data</tspan></text>
+</g>
+
+<!-- ============ panel B : degradation pre-removal encoder ============ -->
+<g class="rv" data-s="2">
+  <text x="466" y="54" font-size="18" font-weight="600" fill="var(--pink)">Stage 1 &#183; Degradation Pre-Removal Encoder</text>
+  <rect x="466" y="64" width="1018" height="176" rx="14" fill="var(--box-f)" stroke="var(--box-s)" class="frame"/>
+</g>
+<g class="rv pop" data-s="2" data-d="1">
+  <path d="M560,96 L646,112 L646,168 L560,184 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="603" y="137.8" text-anchor="middle" font-size="13">VAE</text>
+  <text class="t" x="603" y="154.8" text-anchor="middle" font-size="13">Encoder</text>
+</g>
+<g class="rv" data-s="2" data-d="2">
+  <path class="wire" data-draw d="M666,140 H730" marker-end="url(#mW)" stroke-width="2.4"/>
+  <g transform="translate(698,112)"><use href="#flame"/></g>
+  <text class="mini" x="698" y="176" text-anchor="middle" font-size="13">fine-tune</text>
+</g>
+<g class="rv pop" data-s="2" data-d="3">
+  <path d="M754,96 L840,112 L840,168 L754,184 Z" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/>
+  <text class="t" x="797" y="129.3" text-anchor="middle" font-size="13">Deg.</text>
+  <text class="t" x="797" y="146.3" text-anchor="middle" font-size="13">Removal</text>
+  <text class="t" x="797" y="163.3" text-anchor="middle" font-size="13">Encoder</text>
+</g>
+<g class="rv" data-s="2" data-d="4">
+  <text class="t" x="1155" y="130" text-anchor="middle" font-size="19" fill="var(--ink)"><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">E</tspan><tspan dy="-5"> = ‖</tspan><tspan class="mv">V</tspan><tspan font-size="12" dy="5">D</tspan><tspan dy="-5">(</tspan><tspan class="mv">V</tspan><tspan font-size="12" dy="5">ER</tspan><tspan dy="-5">(</tspan><tspan class="mv">I</tspan><tspan font-size="12" dy="5">deg</tspan><tspan dy="-5">)) &#8722; </tspan><tspan class="mv">V</tspan><tspan font-size="12" dy="5">D</tspan><tspan dy="-5">(</tspan><tspan class="mv">V</tspan><tspan font-size="12" dy="5">ER</tspan><tspan dy="-5">(</tspan><tspan class="mv">I</tspan><tspan font-size="12" dy="5">GT</tspan><tspan dy="-5">))‖</tspan><tspan font-size="12" dy="-8">2</tspan><tspan font-size="12" dy="16">2</tspan></text>
+  <text class="mini" x="1155" y="176" text-anchor="middle">the decoder stays frozen, so only the encoder learns to strip degradation</text>
+</g>
+
+<!-- ============ panel C : adversarial restoration training ============ -->
+<g class="rv" data-s="3">
+  <text x="36" y="290" font-size="18" font-weight="600" fill="var(--green)">Stage 2 &#183; Adversarial Restoration Training</text>
+  <rect x="36" y="300" width="1448" height="340" rx="14" fill="var(--box-f)" stroke="var(--box-s)" class="frame"/>
+</g>
+<g class="rv" data-s="3" data-d="0">
+  <text class="lbl" x="125" y="364" text-anchor="middle" font-size="14.5">Degraded Input</text>
+  <g transform="translate(60,374)"><g clip-path="url(#bboxClip)" filter="url(#fLQ)"><use href="#scene"/></g>
+  <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g>
+</g>
+<g class="rv pop" data-s="3" data-d="1">
+  <path d="M240,374 L336,390 L336,450 L240,466 Z" fill="var(--c-salmon-f)" stroke="var(--c-salmon-s)" class="frame"/>
+  <text class="t" x="288" y="409.3" text-anchor="middle" font-size="13">Deg.</text>
+  <text class="t" x="288" y="426.3" text-anchor="middle" font-size="13">Removal</text>
+  <text class="t" x="288" y="443.3" text-anchor="middle" font-size="13">Encoder</text>
+  <g transform="translate(288,488)"><use href="#snow"/></g>
+</g>
+<g class="rv pop" data-s="3" data-d="2">
+  <rect x="386" y="382" width="210" height="76" rx="9" fill="var(--c-green-f)" stroke="var(--c-green-s)" stroke-width="1.8"/>
+  <text class="t" x="491" y="415.3" text-anchor="middle" font-size="16.5" font-weight="600">Restore</text>
+  <text class="t" x="491" y="437.3" text-anchor="middle" font-size="16.5" font-weight="600">Network</text>
+  <g transform="translate(491,488)"><use href="#flame"/></g>
+</g>
+<g class="rv pop" data-s="3" data-d="3">
+  <path d="M646,390 L742,374 L742,466 L646,450 Z" fill="var(--c-blue-f)" stroke="var(--c-blue-s)" class="frame"/>
+  <text class="t" x="694" y="417.8" text-anchor="middle" font-size="13">VAE</text>
+  <text class="t" x="694" y="434.8" text-anchor="middle" font-size="13">Decoder</text>
+  <g transform="translate(694,488)"><use href="#snow"/></g>
+</g>
+<g class="rv" data-s="3" data-d="4">
+  <text class="lbl" x="851" y="364" text-anchor="middle" font-size="14.5">Restored <tspan class="mv">&#206;</tspan></text>
+  <g transform="translate(786,374)"><use href="#scene"/>
+  <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g>
+</g>
+<g class="rv" data-s="3" data-d="1"><path class="wire" data-draw d="M194,420 H236" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="3" data-d="2">
+  <path class="wire" data-draw d="M336,420 H382" marker-end="url(#mW)"/>
+  <text class="mini" x="359" y="408" text-anchor="middle"><tspan class="mv">y</tspan></text>
+</g>
+<g class="rv" data-s="3" data-d="3">
+  <path class="wire" data-draw d="M596,420 H642" marker-end="url(#mW)"/>
+  <text class="mini" x="619" y="408" text-anchor="middle"><tspan class="mv">x&#770;</tspan></text>
+</g>
+<g class="rv" data-s="3" data-d="4"><path class="wire" data-draw d="M742,420 H782" marker-end="url(#mW)"/></g>
+
+<!-- ===== step 4 : initialize from the diffusion prior ===== -->
+<g class="rv" data-s="4">
+  <path id="pInit" class="gdash" d="M232,240 V266 H470 V378" marker-end="url(#mG)"/>
+  <text x="486" y="260" font-size="14.5" font-weight="500" fill="var(--green)">Initialize using the pre-trained diffusion model</text>
+</g>
+
+<!-- ===== step 5 : discriminator ===== -->
+<g class="rv" data-s="5" data-d="1">
+  <text class="lbl" x="851" y="502" text-anchor="middle" font-size="14.5">Ground Truth <tspan class="mv">I</tspan></text>
+  <g transform="translate(786,512)"><use href="#scene"/>
+  <rect width="130" height="92" rx="2" fill="none" stroke="var(--plate)" stroke-width="2"/></g>
+</g>
+<g class="rv pop" data-s="5" data-d="2">
+  <rect x="976" y="372" width="174" height="60" rx="8" fill="var(--c-pink-f)" stroke="var(--c-pink-s)" class="frame"/>
+  <text class="t" x="1063" y="408" text-anchor="middle" font-size="15.5">Discriminator <tspan class="mv">D</tspan><tspan font-size="11" dy="4">&#981;</tspan></text>
+</g>
+<g class="rv" data-s="5" data-d="2"><path class="wire" data-draw d="M920,396 H972" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="5" data-d="3"><path class="wire thin" data-draw d="M920,530 H944 V414 H972" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="5" data-d="4">
+  <rect x="1190" y="374" width="110" height="56" rx="8" fill="var(--c-pink-f)" stroke="var(--c-pink-s)" class="frame"/>
+  <text class="t" x="1245" y="408.3" text-anchor="middle" font-size="19"><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">adv</tspan></text>
+</g>
+<g class="rv" data-s="5" data-d="4"><path class="wire" data-draw d="M1150,402 H1186" marker-end="url(#mW)"/></g>
+
+<!-- ===== step 6 : reconstruction terms ===== -->
+<g class="rv pop" data-s="6" data-d="1">
+  <rect x="976" y="512" width="174" height="70" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/>
+  <text class="t" x="1063" y="542" text-anchor="middle" font-size="15.5">Reconstruction</text>
+  <text class="t" x="1063" y="564" text-anchor="middle" font-size="15.5">MSE + LPIPS</text>
+</g>
+<g class="rv" data-s="6" data-d="1"><path class="wire" data-draw d="M920,446 H962 V540 H972" marker-end="url(#mW)"/></g>
+<g class="rv" data-s="6" data-d="1"><path class="wire thin" data-draw d="M920,572 H972" marker-end="url(#mW)"/></g>
+<g class="rv pop" data-s="6" data-d="2">
+  <rect x="1190" y="519" width="110" height="56" rx="8" fill="var(--c-tan-f)" stroke="var(--c-tan-s)" class="frame"/>
+  <text class="t" x="1245" y="553.3" text-anchor="middle" font-size="19"><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">rec</tspan></text>
+</g>
+<g class="rv" data-s="6" data-d="2"><path class="wire" data-draw d="M1150,547 H1186" marker-end="url(#mW)"/></g>
+
+<!-- ===== step 7 : gradients, only the restore network moves ===== -->
+<g class="rv" data-s="7">
+  <path id="pBack" class="pdash" d="M1300,402 H1340 V616 H440 V462" marker-end="url(#mP)"/>
+  <path class="pdash" d="M1300,547 H1340"/>
+  <text x="770" y="606" text-anchor="end" font-size="14.5" font-weight="500" fill="var(--pink)">Only the Restore Network is optimized</text>
+</g>
+
+<!-- ===== step 8 : why the initialization works ===== -->
+<g class="rv" data-s="8">
+  <path d="M36,668 H720" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="36" y="700" font-size="15" font-weight="600" fill="var(--ink)">Diffusion-to-Restoration Proximity</text>
+  <text x="36" y="742" font-size="21" fill="var(--ink)"><tspan class="mv">W</tspan><tspan font-size="12" dy="5">2</tspan><tspan dy="-5">(</tspan><tspan class="mv">p</tspan><tspan font-size="12" dy="5">&#952;Diff</tspan><tspan dy="-5">, </tspan><tspan class="mv">p</tspan><tspan font-size="12" dy="5">data</tspan><tspan dy="-5">) &#8804; </tspan><tspan class="mv">C</tspan><tspan font-size="12" dy="5">1</tspan><tspan dy="-5"> </tspan><tspan class="mv">&#949;</tspan><tspan font-size="12" dy="5">sc</tspan><tspan dy="-5"> + </tspan><tspan class="mv">C</tspan><tspan font-size="12" dy="5">2</tspan><tspan dy="-5"> &#916;</tspan><tspan class="mv">k</tspan><tspan> = </tspan><tspan class="mv">&#949;</tspan><tspan font-size="12" dy="5">0</tspan></text>
+  <text class="mini" x="36" y="774">small initial gradients &#183; near complete mode coverage &#183; fast convergence</text>
+</g>
+
+<!-- ===== step 9 : objective ===== -->
+<g class="rv" data-s="9">
+  <path d="M780,668 H1484" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
+  <text x="780" y="700" font-size="15" font-weight="600" fill="var(--ink)">Adversarial Fine-Tuning Objective</text>
+  <text x="780" y="742" font-size="21" fill="var(--ink)"><tspan>min</tspan><tspan font-size="12" dy="5">&#952;</tspan><tspan dy="-5"> </tspan><tspan>max</tspan><tspan font-size="12" dy="5">&#981;</tspan><tspan dy="-5">  </tspan><tspan class="mvb">&#8466;</tspan><tspan font-size="12" dy="5">adv</tspan><tspan dy="-5">(</tspan><tspan class="mv">&#952;</tspan>, <tspan class="mv">&#981;</tspan>) + <tspan class="mv">&#955;</tspan><tspan font-size="12" dy="5">rec</tspan><tspan dy="-5"> </tspan><tspan class="mv">E</tspan><tspan> [Recon(</tspan><tspan class="mv">U</tspan><tspan font-size="12" dy="5">&#952;</tspan><tspan dy="-5">(</tspan><tspan class="mv">y</tspan>), <tspan class="mv">x</tspan>)]</text>
+  <text class="mini" x="780" y="774">no diffusion loss &#183; no teacher &#183; no control adapter &#183; LoRA on the Restore Network</text>
+</g>
+
+<!-- ===== step 10 : single forward pass ===== -->
+<g class="rv" data-s="10">
+  <path id="pFwd" d="M125,420 H851" fill="none" stroke="none"/>
+  <rect class="chip" x="498" y="316" width="394" height="30" rx="15" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="695" y="336" text-anchor="middle" font-size="14.5" font-weight="500" fill="var(--accent)">Inference: one forward pass, no sampling loop</text>
+</g>
+
+<!-- ===== travelling pulses ===== -->
+<g class="rv flow" data-s="4">
+  <circle r="9" fill="var(--green)" opacity=".2"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#pInit"/></animateMotion></circle>
+  <circle r="4" fill="var(--green)"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#pInit"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="7">
+  <circle r="10" fill="var(--pink)" opacity=".22"><animateMotion dur="2.8s" repeatCount="indefinite"><mpath href="#pBack"/></animateMotion></circle>
+  <circle r="4.5" fill="var(--pink)"><animateMotion dur="2.8s" repeatCount="indefinite"><mpath href="#pBack"/></animateMotion></circle>
+</g>
+<g class="rv flow" data-s="10">
+  <circle r="11" fill="var(--accent)" opacity=".2"><animateMotion dur="1.9s" repeatCount="indefinite"><mpath href="#pFwd"/></animateMotion></circle>
+  <circle r="5" fill="var(--accent)"><animateMotion dur="1.9s" repeatCount="indefinite"><mpath href="#pFwd"/></animateMotion></circle>
+</g>
+</svg>
+    </div>
+  </div>
+
+  <div class="rail">
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <div class="cap">
+      <span class="idx"><b id="capNum">01</b> / 10 &nbsp;&#183;&nbsp; <span id="capKey">Pre-trained diffusion model</span></span>
+      <p class="say" id="capSay" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var STEPS = [
+    {k:"Pre-trained diffusion model", ms:2312,
+     s:"HYPIR starts from a pretrained latent diffusion model. Its network already encodes the score of the natural image distribution, which is the quickest route from a degraded image back to clean data."},
+    {k:"Degradation pre-removal", ms:2584,
+     s:"The VAE encoder is not robust to heavy degradation, so it is first fine-tuned into a degradation removal encoder, supervised through the frozen decoder."},
+    {k:"The restoration model", ms:2584,
+     s:"Those parts assemble into a plain image to image model: encode once, run the network once, decode once."},
+    {k:"Diffusion initialization", ms:2720,
+     s:"The Restore Network is not trained from scratch. It inherits the pretrained diffusion weights, and that single choice is what the whole method rests on."},
+    {k:"Discriminator", ms:2448,
+     s:"A discriminator is trained alongside it, learning to separate restored images from clean ones."},
+    {k:"Reconstruction terms", ms:2312,
+     s:"MSE and LPIPS against the ground truth hold the output to the content of the input."},
+    {k:"What actually moves", ms:2584,
+     s:"Both signals flow back into the Restore Network alone. The degradation removal encoder and the VAE decoder stay frozen, and in practice the update is a LoRA."},
+    {k:"Why it converges", ms:2992,
+     s:"Because the initialization already sits within a small Wasserstein distance of the data distribution, the adversarial gradients start small, the modes are already covered, and training converges in tens of thousands of steps."},
+    {k:"The objective", ms:2584,
+     s:"One min max objective with a reconstruction penalty. No diffusion loss, no teacher model, no iterative refinement."},
+    {k:"Inference", ms:3536,
+     s:"At test time a single forward pass produces the restored image, which is where the order of magnitude speedup over diffusion sampling comes from."}
+  ];
+
+  var fig = document.getElementById('fig');
+  var groups = [].slice.call(fig.querySelectorAll('[data-s]'));
+  var draws = [].slice.call(fig.querySelectorAll('[data-draw]'));
+  var ticksEl = document.getElementById('ticks');
+  var capNum = document.getElementById('capNum');
+  var capKey = document.getElementById('capKey');
+  var capSay = document.getElementById('capSay');
+  var btn = document.getElementById('toggle');
+  var btnLabel = document.getElementById('toggleLabel');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  var ICON_PAUSE = '<rect x="0" y="0" width="3.2" height="12" rx="1"/><rect x="6.8" y="0" width="3.2" height="12" rx="1"/>';
+  var ICON_PLAY  = '<path d="M0 0 L10 6 L0 12 Z"/>';
+
+  draws.forEach(function(el){
+    var L = 0;
+    try { L = el.getTotalLength(); } catch(e) { L = 0; }
+    el.dataset.len = L;
+    if (L) { el.style.strokeDasharray = L + ' ' + L; el.style.strokeDashoffset = L; }
+  });
+
+  var ticks = STEPS.map(function(){
+    var t = document.createElement('div');
+    t.className = 'tick';
+    t.appendChild(document.createElement('i'));
+    ticksEl.appendChild(t);
+    return t;
+  });
+
+  var idx = 0, timer = null, playing = false, resetting = false;
+
+  function paint(i, animateTick){
+    groups.forEach(function(g){
+      var on = Number(g.dataset.s) <= i + 1;
+      var d = Number(g.dataset.d || 0) * 82;
+      g.style.transitionDelay = on ? d + 'ms' : '0ms';
+      g.classList.toggle('on', on);
+    });
+    draws.forEach(function(el){
+      var g = el.closest('[data-s]');
+      var on = g && Number(g.dataset.s) <= i + 1;
+      var d = Number((g && g.dataset.d) || 0) * 82 + 54;
+      el.style.transitionDelay = on ? d + 'ms' : '0ms';
+      el.style.strokeDashoffset = on ? 0 : (el.dataset.len || 0);
+    });
+    capNum.textContent = (i + 1 < 10 ? '0' : '') + (i + 1);
+    capKey.textContent = STEPS[i].k;
+    capSay.innerHTML = STEPS[i].s;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j < i ? ' done' : ''); });
+    if (animateTick) {
+      ticks[i].style.setProperty('--dur', STEPS[i].ms + 'ms');
+      void ticks[i].offsetWidth;
+      ticks[i].classList.add('live');
+    } else {
+      ticks[i].classList.add('done');
+    }
+  }
+
+  function schedule(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      if (idx >= STEPS.length - 1) { restart(); }
+      else { idx += 1; paint(idx, true); schedule(); }
+    }, STEPS[idx].ms);
+  }
+
+  function restart(){
+    resetting = true;
+    document.body.classList.add('resetting');
+    groups.forEach(function(g){ g.classList.remove('on'); g.style.transitionDelay = '0ms'; });
+    draws.forEach(function(el){ el.style.transitionDelay = '0ms'; el.style.strokeDashoffset = el.dataset.len || 0; });
+    ticks.forEach(function(t){ t.className = 'tick'; });
+    timer = setTimeout(function(){
+      document.body.classList.remove('resetting');
+      resetting = false;
+      idx = 0; paint(0, true); schedule();
+    }, 320);
+  }
+
+  function play(){
+    playing = true;
+    btnLabel.textContent = 'Pause';
+    btn.setAttribute('aria-label', 'Pause the animation');
+    btn.querySelector('svg').innerHTML = ICON_PAUSE;
+    paint(idx, true);
+    schedule();
+  }
+  function pause(){
+    playing = false;
+    clearTimeout(timer);
+    document.body.classList.remove('resetting');
+    if (resetting) { resetting = false; idx = 0; paint(0, false); }
+    btnLabel.textContent = 'Play';
+    btn.setAttribute('aria-label', 'Play the animation');
+    btn.querySelector('svg').innerHTML = ICON_PLAY;
+    ticks.forEach(function(t, j){ t.className = 'tick' + (j <= idx ? ' done' : ''); });
+  }
+  function step(delta){
+    if (playing) pause();
+    idx = Math.min(STEPS.length - 1, Math.max(0, idx + delta));
+    paint(idx, false);
+  }
+
+  btn.addEventListener('click', function(){ playing ? pause() : play(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+    else if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playing ? pause() : play(); }
+  });
+
+  if (reduce.matches) { idx = STEPS.length - 1; paint(idx, false); pause(); }
+  else { paint(0, false); play(); }
+})();
+</script>
+
+
+<script>
+/* ---- embed bridge: report height to the host page, accept play/pause ---- */
+(function(){
+  if (window.parent === window) return;
+  var last = 0;
+  function post(){
+    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
+    if (h && Math.abs(h - last) > 1) { last = h; parent.postMessage({type:'shm-anim-height', h:h}, '*'); }
+  }
+  if (window.ResizeObserver) new ResizeObserver(post).observe(document.documentElement);
+  window.addEventListener('load', post);
+  window.addEventListener('resize', post);
+  document.fonts && document.fonts.ready && document.fonts.ready.then(post);
+  post();
+
+  function playing(){
+    var label = document.getElementById('toggleLabel');
+    return !!label && (label.textContent || '').trim() === 'Pause';
+  }
+  function announce(){ parent.postMessage({type:'shm-anim-state', playing:playing()}, '*'); }
+
+  window.addEventListener('message', function(e){
+    var d = e.data || {};
+    if (d.type !== 'shm-anim-cmd') return;
+    var btn = document.getElementById('toggle');
+    if (!btn) return;
+    if (d.cmd === 'prev' || d.cmd === 'next') {
+      /* the figure already steps on ArrowLeft/ArrowRight — hand it one */
+      document.dispatchEvent(new KeyboardEvent('keydown', {
+        key: d.cmd === 'next' ? 'ArrowRight' : 'ArrowLeft', bubbles: true
+      }));
+      announce();
+      return;
+    }
+    if (d.cmd === 'toggle') btn.click();
+    if (d.cmd === 'pause' && playing()) btn.click();
+    if (d.cmd === 'play' && !playing()) btn.click();
+    announce();
+  });
+
+  var lbl = document.getElementById('toggleLabel');
+  if (lbl && window.MutationObserver) new MutationObserver(announce).observe(lbl, {childList:true, characterData:true, subtree:true});
+  window.addEventListener('load', announce);
+  announce();
+})();
+</script>
+</body>
+</html>
