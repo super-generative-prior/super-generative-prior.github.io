@@ -185,7 +185,8 @@
 
     var hl = $('dHighlights');
     hl.innerHTML = '';
-    (p.highlights || []).forEach(function (h, k) {
+    /* while a work is held back, the panel says so instead of listing it */
+    (p.soon ? [] : (p.highlights || [])).forEach(function (h, k) {
       var li = make('li', null, esc(h));
       li.style.animation = 'rise .6s var(--ease) backwards';
       li.style.animationDelay = (120 + k * 60) + 'ms';
@@ -210,12 +211,14 @@
       fig.innerHTML = '<img src="' + esc(p.figure) + '" alt="' + esc(p.name) + ' teaser">';
     } else {
       var art = window.SHM.cover ? window.SHM.cover(p.id, 0) : '';
-      fig.className = 'd-figure is-art' + (p.anim ? ' is-anim' : '');
-      var label = p.anim
+      /* a held-back work must not advertise a walkthrough its page will not show */
+      var showWalk = p.anim && !p.soon;
+      fig.className = 'd-figure is-art' + (showWalk ? ' is-anim' : '');
+      var label = showWalk
         ? '<span class="fa-t">' + esc(p.anim.title) + '</span>' +
           '<span class="fa-n">Animated walkthrough · 10 steps</span>'
         : '<span class="fa-t">' + esc(p.name) + '</span>' +
-          '<span class="fa-n">Not public yet</span>';
+          '<span class="fa-n">Not out yet</span>';
       var inner = '<span class="fa-art" aria-hidden="true">' + art + '</span>' +
         '<span class="fa-cap">' + label + '</span>';
       fig.innerHTML = '';

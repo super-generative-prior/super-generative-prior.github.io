@@ -409,6 +409,18 @@ window.PAPERS = [
     venue: 'Coming soon',         /* 未发表的一律只写这个，不写会议名也不写 in submission */
     status: 'submission',
     needsReview: true,          /* 标题与作者待填；方法内容取自你自己的动画解说，是真实的 */
+
+    /* ⚠️⚠️ 论文还没放出去，所以整页先只显示「Not out yet」卡片。
+       下面的 facts / anim / method / highlights / stats 一个字都没删，
+       **只要把这个 soon 块整段删掉，完整页面立刻全部回来**，不需要改别的。 */
+    soon: {
+      label: 'Coming soon',
+      title: 'Not out yet.',
+      text: 'The full write-up, the results and an animated walkthrough will appear on ' +
+            'this page once the work is out.',
+      meta: ''
+    },
+
     title: '',                  /* ⚠️ 论文全名还没公开：填了这里页面就会显示副标题 */
     tagline: 'A native video prior, and temporal realism learned by matching its distribution.',
     preview: 'The generator starts as a copy of a video diffusion model, then a teacher score teaches it time.',

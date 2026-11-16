@@ -45,7 +45,7 @@ python3 super-hyper-master/serve.py
 | 位置 | 需要做的事 |
 | --- | --- |
 | 4·HYPI2VR | **已中 NeurIPS 2026**，标题、作者、BibTeX 都已填好。只剩 `links` 还是 `'#'`（arXiv / 项目页 / 代码），填了才会变成可点按钮 |
-| 5·HYPVR | 方法内容是真的，`title` / `authors` 还空着。未发表，venue 写 `Coming soon` |
+| 5·HYPVR | 论文还没放出去，所以加了 `soon` 块，整页只显示「Not out yet」卡片。**facts / anim / method / highlights 全都原样留在数据里**，放出去那天把 `soon` 整段删掉就立刻全部回来 |
 | 6·MASTIR | 走「敬请期待」状态：`soon` 字段渲染成一张卡片，代替方法 / 结果 / 动画版块。有内容了把 `soon` 删掉、按其他篇的格式填 `method` / `facts` / `anim` 即可 |
 | 1·SUPIR / 2·UniCon / 3·HYPIR | 标题、会议、作者、链接、正文均按公开信息核对过（含 UniCon 的 −1/3 显存、2.3× 训练加速等具体数字），可直接用 |
 | `links` 里 `href: '#'` | 只剩未发表那三篇，填了才会变成可点按钮（否则显示为 soon） |
@@ -77,8 +77,11 @@ python3 super-hyper-master/serve.py
 **Step in the evolution** 这一步在演化线上的位置 + 上一篇 / 下一篇
 **Resources** 资源卡片 + BibTeX
 
-没有公开材料的工作（现在是 MASTIR）加一个 `soon` 字段就会渲染成「敬请期待」卡片，
-其余版块自动不出现；`title` 留空则只显示缩写名，不会在页面上露出占位文字。
+`soon` 字段是一个**开关**：有它的时候，整页只渲染页头 + 主张 + 「Not out yet」卡片 +
+上下篇导航，facts / 对比图 / 动画 / 方法 / 要点 / 结果 / 资源全部不显示——但数据一个字都不删。
+首页面板同步：不列要点，右侧的图也不再写「Animated walkthrough」。
+**删掉 `soon` 整段 = 完整页面立刻回来**，不需要改任何别的地方。
+`title` 留空则只显示缩写名，不会在页面上露出占位文字。
 
 顶部有一条常驻的六点导航条，对应时间线上的六个工作，当前这篇高亮；已发表是实心点，
 未发表是空心点。键盘 `←` `→` 直接翻到相邻论文，`Esc` 回时间线对应位置。

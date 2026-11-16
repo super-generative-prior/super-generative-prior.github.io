@@ -130,6 +130,9 @@
   }
 
   /* ------------------------------------------------------- coming soon -- */
+  /* `soon` is a switch, not just a card: while it is present the page shows the
+     notice instead of the work, and everything else in papers.js is left alone.
+     Delete the soon block and the full page comes straight back. */
   function soon(p) {
     if (!p.soon) return null;
     var sec = make('section', 'p-sec p-soon');
@@ -447,10 +450,14 @@
     buildBar(id);
 
     var root = document.getElementById('paperRoot');
-    var figure = animation(p);
-    [hero(p), lede(p), teaser(p), facts(p), soon(p), gallery(p), figure, method(p),
-      highlights(p), results(p), evolution(p, i), resources(p)]
-      .forEach(function (n) { if (n) root.appendChild(n); });
+    var figure = p.soon ? null : animation(p);
+
+    var sections = p.soon
+      ? [hero(p), lede(p), soon(p), evolution(p, i)]
+      : [hero(p), lede(p), teaser(p), facts(p), gallery(p), figure, method(p),
+         highlights(p), results(p), evolution(p, i), resources(p)];
+
+    sections.forEach(function (n) { if (n) root.appendChild(n); });
 
     S.buildFooter('paper');
 
