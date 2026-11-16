@@ -8,7 +8,7 @@
 
   var S = window.SHM;
   var PAPERS = window.PAPERS || [], ERAS = window.ERAS || {};
-  var STATUS = { published: '', accepted: 'To appear', submission: 'In submission' };
+  var STATUS = { published: '', accepted: 'To appear', submission: 'Coming soon' };
   var make = S.make, esc = S.esc;
 
   function indexOf(id) {

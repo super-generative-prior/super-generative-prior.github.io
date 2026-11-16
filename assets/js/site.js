@@ -1,5 +1,5 @@
 /* =============================================================================
-   Shared bits used by both index.html and team.html:
+   Shared bits used across the site:
    helpers, the era palette, and the site footer.
    ========================================================================== */
 window.SHM = (function () {
@@ -29,17 +29,6 @@ window.SHM = (function () {
   /* pages under papers/ set window.SHM_BASE = '../' so data paths still resolve */
   function base() { return window.SHM_BASE || ''; }
   function path(p) { return /^([a-z]+:)?\/\//i.test(p || '') ? p : base() + (p || ''); }
-
-  /* "Jinjin Gu" → "JG", "成员 06" → "成" */
-  function initials(name) {
-    var s = String(name || '').trim();
-    if (!s) return '?';
-    if (/[一-龥]/.test(s)) return s.replace(/[^一-龥]/g, '').slice(0, 1) || s.slice(0, 1);
-    var parts = s.split(/\s+/);
-    var last = parts[parts.length - 1];
-    if (parts.length > 1 && /^\d+$/.test(last)) return last;   /* "Member 08" → 08 */
-    return (parts[0][0] + (parts.length > 1 ? last[0] : '')).toUpperCase();
-  }
 
   /* an <a> when the link is real, an inert <span> when it is still '#' */
   function linkOr(href, inner, cls) {
@@ -117,8 +106,7 @@ window.SHM = (function () {
         head: 'Site',
         items: [
           { label: 'Timeline', href: onHome ? '#top' : base() + 'index.html' },
-          { label: 'Related Work', href: home + '#related' },
-          { label: 'Team', href: page === 'team' ? '#top' : base() + 'team.html' }
+          { label: 'Related Work', href: home + '#related' }
         ]
       },
       {
@@ -180,7 +168,6 @@ window.SHM = (function () {
     base: base,
     buildHeroLogos: buildHeroLogos,
     live: live,
-    initials: initials,
     linkOr: linkOr,
     buildFooter: buildFooter
   };

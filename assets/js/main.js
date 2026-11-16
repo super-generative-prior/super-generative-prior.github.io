@@ -9,7 +9,7 @@
   var PAPERS = window.PAPERS, ERAS = window.ERAS;
   var ERA_COLOR = window.SHM.ERA_COLOR;
   var make = window.SHM.make, esc = window.SHM.esc;
-  var STATUS = { published: '', accepted: 'To appear', submission: 'In submission' };
+  var STATUS = { published: '', accepted: 'To appear', submission: 'Coming soon' };
 
   /* node positions, in % of the track's inner width */
   var LEFT = 6, RIGHT = 94;

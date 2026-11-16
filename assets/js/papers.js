@@ -338,11 +338,11 @@ window.PAPERS = [
     id: 'hypi2vr',
     name: 'HYPI2VR',
     era: 'hyper',
-    year: '',
-    venue: 'In submission',       /* 双盲期间不写会议名 */
-    status: 'submission',
-    needsReview: true,          /* 标题与作者待填；方法内容取自你自己的动画解说，是真实的 */
-    title: '',                  /* ⚠️ 论文全名还没公开：填了这里页面就会显示副标题 */
+    year: '2026',
+    venue: 'NeurIPS 2026',
+    status: 'accepted',
+    needsReview: true,          /* ⚠️ 已中稿，但论文全名、作者、链接、BibTeX 还空着，补上就会自动显示 */
+    title: '',                  /* 填了这里，大标题下面就会出现论文全名 */
     tagline: 'Carry single-pass generative restoration into video, by controlling the noise.',
     preview: 'The image model runs per frame; the stochasticity is rebalanced and warped so texture stops flickering.',
     abstract:
@@ -361,7 +361,7 @@ window.PAPERS = [
     stats: [
       { k: 'Domain', v: 'Image prior → video' },
       { k: 'Backbone', v: 'HYPIR-style, per frame' },
-      { k: 'Status', v: 'In submission' }
+      { k: 'Status', v: 'To appear' }
     ],
     facts: [
       { k: 'Prior', v: 'Image diffusion' },
@@ -399,7 +399,7 @@ window.PAPERS = [
     name: 'HYPVR',
     era: 'hyper',
     year: '',
-    venue: 'In submission',       /* 双盲期间不写会议名 */
+    venue: 'Coming soon',         /* 未发表的一律只写这个，不写会议名也不写 in submission */
     status: 'submission',
     needsReview: true,          /* 标题与作者待填；方法内容取自你自己的动画解说，是真实的 */
     title: '',                  /* ⚠️ 论文全名还没公开：填了这里页面就会显示副标题 */
@@ -420,7 +420,7 @@ window.PAPERS = [
     stats: [
       { k: 'Prior', v: 'Native video diffusion' },
       { k: 'Temporal', v: 'Distribution matching' },
-      { k: 'Status', v: 'In submission' }
+      { k: 'Status', v: 'Coming soon' }
     ],
     facts: [
       { k: 'Prior', v: 'Video diffusion + VAE' },
@@ -458,12 +458,12 @@ window.PAPERS = [
     name: 'MASTIR',
     era: 'master',
     year: '',
-    venue: 'In submission',       /* 双盲期间不写会议名 */
+    venue: 'Coming soon',         /* 未发表的一律只写这个，不写会议名也不写 in submission */
     status: 'submission',
     needsReview: true,          /* 还没有公开材料，页面走 soon 状态；有内容了删掉 soon 即可 */
     title: 'MASTIR',
     tagline: 'One model, mastering restoration itself.',
-    preview: 'The end of the line: restoration as one general capability. Not public yet.',
+    preview: 'The end of the line: restoration as one general capability. Not out yet.',
     abstract:
       'MASTIR is where this line converges. Not a model per degradation, per modality, per task, ' +
       'but restoration learned as a general capability — one understanding of damage, one way of ' +
@@ -471,15 +471,15 @@ window.PAPERS = [
     highlights: [],
     stats: [
       { k: 'Scope', v: 'Unified' },
-      { k: 'Status', v: 'In submission' }
+      { k: 'Status', v: 'Coming soon' }
     ],
     facts: [],
     /* 有 soon 时，页面会渲染一张「敬请期待」卡片，代替方法 / 结果 / 动画那几个版块 */
     soon: {
       label: 'Coming soon',
-      title: 'Not public yet.',
-      text: 'MASTIR is still in submission. The full write-up, the results and an animated ' +
-            'walkthrough will appear on this page once the work is out.',
+      title: 'Not out yet.',
+      text: 'The full write-up, the results and an animated walkthrough will appear on ' +
+            'this page once the work is out.',
       meta: ''
     },
     step: 'The end of the line, and the start of another: from handling one kind of damage to mastering repair.',
@@ -508,31 +508,6 @@ window.ERAS = {
     title: 'Unification',
     blurb: 'Not a model per degradation, but restoration itself learned as a general capability.'
   }
-};
-
-/* =============================================================================
-   TEAM — team.html 的成员网格（桌面一行 5 个头像）
-   -----------------------------------------------------------------------------
-   photo   头像图路径，如 'assets/team/jinjin-gu.jpg'；留空则显示姓名首字母占位
-   role    职位 / 身份      place  单位      href  个人主页（'#' 则不可点）
-   ⚠️ role / place 全部是占位符，请替换；后 5 位是纯占位成员，按需删改。
-   ========================================================================== */
-window.TEAM = {
-  blurb:
-    'This line of work comes out of XPixel Group and its collaborators, working on low-level vision, ' +
-    'image and video restoration, and generative models under real-world degradation.',
-  members: [
-    { name: 'Jinjin Gu',  role: '<Role>', place: '<Affiliation>', href: 'https://www.jasongt.com/', photo: '' },
-    { name: 'Chao Dong',  role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Fanghua Yu', role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Xinqi Lin',  role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Jinfan Hu',  role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Zheyuan Li', role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Zhiyuan You', role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Member 08',  role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Member 09',  role: '<Role>', place: '<Affiliation>', href: '#', photo: '' },
-    { name: 'Member 10',  role: '<Role>', place: '<Affiliation>', href: '#', photo: '' }
-  ]
 };
 
 /* 页脚保留的机构链接 */

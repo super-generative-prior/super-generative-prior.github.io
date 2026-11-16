@@ -9,7 +9,6 @@ super-hyper-master/
 ├── papers/                    主线六个工作，每篇一个完整页面
 │   ├── supir.html  unicon.html  hypir.html
 │   └── hypi2vr.html  hypvr.html  mastir.html
-├── team.html                  Team 页：成员头像网格
 ├── serve.py                   本地预览用的小服务器
 └── assets/
     ├── css/style.css          全部样式（所有页面共用）
@@ -17,12 +16,10 @@ super-hyper-master/
     ├── js/site.js             各页共用：页脚 / logo / 工具函数
     ├── js/main.js             首页：时间线 / 悬停气泡 / 摘要面板 / Related Work
     ├── js/paper.js            论文页模板（六个页面共用一份渲染逻辑）
-    ├── js/team.js             Team 页：成员网格
     ├── js/covers.js           自动生成的示意图（卡片配图、论文图示）
     ├── anim/                  五个动画演示（你给的 HTML，已改成可嵌入版本）
     ├── figures/               teaser 图 + Related Work 缩略图
-    ├── logos/                 机构 logo
-    └── team/                  成员头像
+    └── logos/                 机构 logo
 ```
 
 `papers/*.html` 是六个很薄的壳（只有各自的 `<title>` 和 og 标签），版面和内容全部由
@@ -47,20 +44,23 @@ python3 super-hyper-master/serve.py
 
 | 位置 | 需要做的事 |
 | --- | --- |
-| 4·HYPI2VR / 5·HYPVR | **方法内容已经是真的**（取自你自己的动画解说）。只剩 `title` 和 `authors` 没填——**它们现在是空字符串，页面就只显示缩写名，不会露出任何占位文字**，填上就会自动出现副标题和作者行 |
+| 4·HYPI2VR | **已中 NeurIPS 2026**。方法内容是真的（取自你的动画解说），但 `title` / `authors` / `links` / `bibtex` 还空着 —— 填上就会自动出现副标题、作者行、链接按钮和引用块 |
+| 5·HYPVR | 方法内容是真的，`title` / `authors` 还空着。未发表，venue 写 `Coming soon` |
 | 6·MASTIR | 走「敬请期待」状态：`soon` 字段渲染成一张卡片，代替方法 / 结果 / 动画版块。有内容了把 `soon` 删掉、按其他篇的格式填 `method` / `facts` / `anim` 即可 |
 | 1·SUPIR / 2·UniCon / 3·HYPIR | 标题、会议、作者、链接、正文均按公开信息核对过（含 UniCon 的 −1/3 显存、2.3× 训练加速等具体数字），可直接用 |
 | `links` 里 `href: '#'` | 只剩未发表那三篇，填了才会变成可点按钮（否则显示为 soon） |
 | `window.RELATED` | 已填入 18 篇真实论文（取自 jasongt.com 与 xpixel.group 的公开列表，范围限定 IR / 人脸 / 可解释性与泛化 / IQA，不含 inpainting、editing）。所有链接都 HTTP 验证过。要增删直接改这个数组，网格会自动重排 |
-| `window.TEAM.members` | 前 7 位是从论文作者列表取的真名，但每人的 `role`/`place` 都是 `<Role>` `<Affiliation>` 占位符；Member 08–10 是纯占位，按需删改 |
 | `window.LABS` | 页脚 Group 一列（现在是 XPixel Group、INSAIT） |
 | `assets/figures/` | 论文 teaser 图（`figure` 字段）和 Related Work 缩略图（`thumb` 字段），例如 `figure: 'assets/figures/supir.jpg'`。Related Work 那 18 张卡片现在都是占位底纹，配了图会好看很多 |
-| `assets/team/` | 成员头像（`photo` 字段），正方形，留空则显示姓名首字母 |
 | `assets/logos/` + `window.LOGOS` | 机构 logo（INSAIT 等），`src` 留空时显示同尺寸的虚线文字牌占位 |
 
 ## 语言
 
 站点文案统一用英文（`<html lang="en">`）。代码注释和这份 README 保留中文，方便你维护。
+
+未发表的工作在页面上只写 **Coming soon**，不写会议名，也不写 in submission ——
+避免在双盲评审期间透露任何投稿信息。改这些的开关在 `main.js` / `paper.js` 的 `STATUS` 映射
+和 `papers.js` 里各篇的 `venue`。
 
 ## 论文页（主线六个工作）
 
@@ -180,10 +180,8 @@ MASTIR 还没有动画，所以它的页面不显示这个版块。
   不用管放的位置。主线时间线仍然是年代正序——它是从左到右的演化叙事，
   SUPER→HYPER→MASTER 三个阶段靠的就是这个顺序。
   `href` 还是 `'#'` 的卡片不可点，填了链接才会有悬停效果。
-- **Team**：独立页面 `team.html`，桌面一行 5 个头像（1000px 以下 4 个、820px 以下 3 个、
-  560px 以下 2 个）。头像是圆形，没图时用姓名首字母 + 三个阶段的配色轮换。
-- **页脚**：两页共用，四栏 —— 站点名、Papers（六篇，直达 hash）、Site（Timeline /
-  Related Work / Team）、Group（XPixel Group、INSAIT）。
+- **页脚**：各页共用，四栏 —— 站点名、Papers（六篇，直达 hash）、Site（Timeline /
+  Related Work）、Group（XPixel Group、SIAT、INSAIT）。
 - **机构 logo**：两页页头都有一条 logo 带（在细分隔线下方）。所有 logo 统一转成灰度、
   透明度 62%，这样不同配色、不同形状的标志放在一起视觉重量才一致；鼠标悬停时恢复彩色
   并微微上浮。想换到页脚就把 `papers.js` 里的 `window.LOGO_PLACEMENT` 改成 `'footer'`，
