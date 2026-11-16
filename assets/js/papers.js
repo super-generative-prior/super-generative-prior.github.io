@@ -341,8 +341,8 @@ window.PAPERS = [
     year: '2026',
     venue: 'NeurIPS 2026',
     status: 'accepted',
-    needsReview: true,          /* ⚠️ 已中稿，但论文全名、作者、链接、BibTeX 还空着，补上就会自动显示 */
-    title: '',                  /* 填了这里，大标题下面就会出现论文全名 */
+    needsReview: true,          /* ⚠️ 只剩 links（arXiv / 项目页 / 代码）还空着 */
+    title: 'Harnessing Image Diffusion Priors for Video Restoration',
     tagline: 'Carry single-pass generative restoration into video, by controlling the noise.',
     preview: 'The image model runs per frame; the stochasticity is rebalanced and warped so texture stops flickering.',
     abstract:
@@ -387,11 +387,18 @@ window.PAPERS = [
         s: 'The encoder adds a frame-dependent perturbation of its own; training it against flow-aligned neighbouring latents removes that, with no clean latent needed as supervision. A temporal attention block after each spatial block then links frames directly, covering the motion and occlusion that flow-based propagation cannot.' }
     ],
     step: 'A step across dimensions: the object of restoration goes from a frame to a stretch of time.',
-    authors: '',                /* ⚠️ 作者列表待填 */
+    authors: 'Fanghua Yu, Hongyu An, Jinfan Hu, Xinqi Lin, Zhiyuan You, Hongyang Li, ' +
+      'Chao Dong, Jinjin Gu  (corresponding author)',
     links: [{ label: 'Paper', href: '#' }],
     resources: [],
     figure: '',
-    bibtex: ''
+    bibtex: `@inproceedings{yu2026hypi2vr,
+  title     = {Harnessing Image Diffusion Priors for Video Restoration},
+  author    = {Yu, Fanghua and An, Hongyu and Hu, Jinfan and Lin, Xinqi and
+               You, Zhiyuan and Li, Hongyang and Dong, Chao and Gu, Jinjin},
+  booktitle = {NeurIPS},
+  year      = {2026}
+}`
   },
 
   {

@@ -44,7 +44,7 @@ python3 super-hyper-master/serve.py
 
 | 位置 | 需要做的事 |
 | --- | --- |
-| 4·HYPI2VR | **已中 NeurIPS 2026**。方法内容是真的（取自你的动画解说），但 `title` / `authors` / `links` / `bibtex` 还空着 —— 填上就会自动出现副标题、作者行、链接按钮和引用块 |
+| 4·HYPI2VR | **已中 NeurIPS 2026**，标题、作者、BibTeX 都已填好。只剩 `links` 还是 `'#'`（arXiv / 项目页 / 代码），填了才会变成可点按钮 |
 | 5·HYPVR | 方法内容是真的，`title` / `authors` 还空着。未发表，venue 写 `Coming soon` |
 | 6·MASTIR | 走「敬请期待」状态：`soon` 字段渲染成一张卡片，代替方法 / 结果 / 动画版块。有内容了把 `soon` 删掉、按其他篇的格式填 `method` / `facts` / `anim` 即可 |
 | 1·SUPIR / 2·UniCon / 3·HYPIR | 标题、会议、作者、链接、正文均按公开信息核对过（含 UniCon 的 −1/3 显存、2.3× 训练加速等具体数字），可直接用 |
