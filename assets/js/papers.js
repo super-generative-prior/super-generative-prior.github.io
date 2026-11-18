@@ -28,8 +28,10 @@
      resources  [{label,href,note}] 资源卡片
      teaser     {src,alt,caption} 页面顶部大图
 
-   前三篇的标题/作者/会议/链接已按公开信息核对（jasongt.com、xpixel.group、arXiv）。
-   ⚠️ TODO: 标记 needsReview: true 的三篇尚未发表，正文是占位文案，请替换。
+   前四篇（SUPIR / UniCon / HYPIR / HYPI2VR）的标题、作者、会议、链接都已逐项
+   核对过 arXiv 原文。
+   ⚠️ TODO: 还标着 needsReview: true 的两篇尚未公开，整页走 soon 状态；论文放出去
+            之后把那一段 soon 删掉，完整内容立刻全部回来。
    ========================================================================== */
 
 window.PAPERS = [
@@ -341,8 +343,7 @@ window.PAPERS = [
     year: '2026',
     venue: 'NeurIPS 2026',
     status: 'accepted',
-    needsReview: true,          /* ⚠️ 只剩 links（arXiv / 项目页 / 代码）还空着 */
-    title: 'Harnessing Image Diffusion Priors for Video Restoration',
+    title: 'Harnessing Image Diffusion Prior for Photo-Realistic Video Restoration',
     tagline: 'Carry single-pass generative restoration into video, by controlling the noise.',
     preview: 'The image model runs per frame; the stochasticity is rebalanced and warped so texture stops flickering.',
     abstract:
@@ -355,8 +356,8 @@ window.PAPERS = [
     highlights: [
       'Noise energy rebalancing: a high-pass mask keeps stochasticity where detail lives',
       'Motion-aligned noise: optical flow carries the noise pattern from frame to frame',
-      'Noise-to-noise encoder training, with no clean latent needed as supervision',
-      'Temporal attention after each spatial block, for the motion and occlusion flow cannot cover'
+      'A self-supervised denoising encoder, trained with no clean latent as supervision',
+      'Decoupled temporal attention, for the motion and occlusion that flow cannot cover'
     ],
     stats: [
       { k: 'Domain', v: 'Image prior → video' },
@@ -384,20 +385,28 @@ window.PAPERS = [
       { t: 'Warp the noise along motion',
         s: 'Left alone, frame two would draw its own independent noise and the synthesized textures would flicker. Optical flow warps the rebalanced noise from one frame onto the next, so a moving region keeps its stochastic pattern instead of sampling a new one, and detail travels with the content rather than against it.' },
       { t: 'Clean the encoder, then link the frames',
-        s: 'The encoder adds a frame-dependent perturbation of its own; training it against flow-aligned neighbouring latents removes that, with no clean latent needed as supervision. A temporal attention block after each spatial block then links frames directly, covering the motion and occlusion that flow-based propagation cannot.' }
+        s: 'The encoder adds a frame-dependent perturbation of its own; a self-supervised objective that trains it against flow-aligned neighbouring latents removes that, with no clean latent needed as supervision. A decoupled temporal attention block after each spatial block then links frames directly, covering the motion and occlusion that flow-based propagation cannot.' }
     ],
     step: 'A step across dimensions: the object of restoration goes from a frame to a stretch of time.',
-    authors: 'Fanghua Yu, Hongyu An, Jinfan Hu, Xinqi Lin, Zhiyuan You, Hongyang Li, ' +
-      'Chao Dong, Jinjin Gu  (corresponding author)',
-    links: [{ label: 'Paper', href: '#' }],
-    resources: [],
+    authors: 'Fanghua Yu, Hongyu An, Jinfan Hu, Xinqi Lin, Zhiyuan You, Jian Wang, ' +
+      'Hongyang Li, Chao Dong, Jinjin Gu  (corresponding author)',
+    links: [{ label: 'Paper', href: 'https://arxiv.org/abs/2611.22874' }],
+    resources: [
+      { label: 'Paper', href: 'https://arxiv.org/abs/2611.22874', note: 'arXiv 2611.22874 · NeurIPS 2026' },
+      { label: 'PDF', href: 'https://arxiv.org/pdf/2611.22874', note: 'Direct download from arXiv' }
+    ],
     figure: '',
     bibtex: `@inproceedings{yu2026hypi2vr,
-  title     = {Harnessing Image Diffusion Priors for Video Restoration},
-  author    = {Yu, Fanghua and An, Hongyu and Hu, Jinfan and Lin, Xinqi and
-               You, Zhiyuan and Li, Hongyang and Dong, Chao and Gu, Jinjin},
-  booktitle = {NeurIPS},
-  year      = {2026}
+  title         = {Harnessing Image Diffusion Prior for Photo-Realistic Video
+                   Restoration},
+  author        = {Yu, Fanghua and An, Hongyu and Hu, Jinfan and Lin, Xinqi and
+                   You, Zhiyuan and Wang, Jian and Li, Hongyang and Dong, Chao
+                   and Gu, Jinjin},
+  booktitle     = {NeurIPS},
+  year          = {2026},
+  eprint        = {2611.22874},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CV}
 }`
   },
 
